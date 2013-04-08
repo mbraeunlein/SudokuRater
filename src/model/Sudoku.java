@@ -105,16 +105,6 @@ public class Sudoku {
 		return count;
 	}
 
-	public void OnePosibilityFillIn() {
-		for (int i = 0; i < 9; i++) {
-			for (int j = 0; j < 9; j++) {
-				if (board[i][j].number != 0)
-					if (board[i][j].posibilities.size() == 1)
-						board[i][j].number = board[i][j].posibilities.get(0);
-			}
-		}
-	}
-
 	public void removePosibility(int row, int column, int number)
 			throws Exception {
 		if (row < 0 || row > 8)
@@ -129,7 +119,7 @@ public class Sudoku {
 		for (int i = 0; i < posibilities.size(); i++) {
 			int pos = posibilities.get(i);
 			if (pos != number)
-				newPosibilities.add(number);
+				newPosibilities.add(pos);
 		}
 
 		if (newPosibilities.size() == 0)
@@ -138,6 +128,13 @@ public class Sudoku {
 		if (newPosibilities.size() > 1)
 			board[row][column].posibilities = newPosibilities;
 		if (newPosibilities.size() == 1)
+		{
 			board[row][column].number = newPosibilities.get(0);
+			board[row][column].posibilities.clear();
+		}
+	}
+	
+	public Field getField(int row, int column) {
+		return board[row][column];
 	}
 }
