@@ -6,9 +6,6 @@ public class Sudoku {
 	// Erst Reihe dann Spalte
 	private Field[][] board = new Field[9][9];
 
-	public Sudoku() {
-	}
-
 	// Ein String aus 81 Ziffern zwischen 0 und 9 repräsentiert ein Sudoku Feld
 	// 0 steht hierbei für nicht ausgefüllte Felder
 	public Sudoku(String sudokuString) {
@@ -49,6 +46,7 @@ public class Sudoku {
 		return s;
 	}
 
+	// return a row identified by a number between 0 and 8
 	public Field[] getRow(int number) throws Exception {
 		if (number < 0 || number > 8) {
 			throw new Exception("the number has to be between 0 and 8");
@@ -60,6 +58,7 @@ public class Sudoku {
 		return row;
 	}
 
+	// returns a column identified by a number between 0 and 8
 	public Field[] getColumn(int number) throws Exception {
 		if (number < 0 || number > 8) {
 			throw new Exception("the number has to be between 0 and 8");
@@ -71,6 +70,36 @@ public class Sudoku {
 		return column;
 	}
 
+	public int getContainingBlockNumber(int row, int column) {
+		int number = 0;
+		
+		if(row < 9) {
+			if(column < 9)
+				number = 8;
+			if(column < 6)
+				number = 7;
+			if(column < 3)
+				number = 6;
+		}
+		if(row < 6) {
+			if(column < 9)
+				number = 5;
+			if(column < 6)
+				number = 4;
+			if(column < 3)
+				number = 3;
+		}
+		if(row < 3) {
+			if(column < 9)
+				number = 2;
+			if(column < 6)
+				number = 1;
+			if(column < 3)
+				number = 0;
+		}
+		return number;
+	}
+	// returns a block identified by a number between 0 and 8
 	public Field[] getBlock(int number) throws Exception {
 		if (number < 0 || number > 8) {
 			throw new Exception("the number has to be between 0 and 8");
@@ -90,11 +119,15 @@ public class Sudoku {
 				block[3 * i + j] = board[yStart * 3 + i][xStart * 3 + j];
 			}
 		}
-
-		System.out.println(xStart + " / " + yStart);
 		return block;
 	}
+	
+	// return the field identified by the row and column
+	public Field getField(int row, int column) {
+		return board[row][column];
+	}
 
+	// the number of possible numbers to insert
 	public int constraintCount() {
 		int count = 0;
 		for (int i = 0; i < 9; i++) {
@@ -104,15 +137,30 @@ public class Sudoku {
 		}
 		return count;
 	}
+	
+	// the number of filled fields
+	public int numberCount() {
+		int count = 0;
+		for(int i = 0; i < 9; i++) {
+			for(int j = 0; j < 9; j++) {
+				if(board[i][j].number != 0)
+					count += 1;
+			}
+		}
+		return count;
+	}
 
+	// removes a possibility in a field specified by the row and the column
 	public void removePosibility(int row, int column, int number)
 			throws Exception {
 		if (row < 0 || row > 8)
 			throw new Exception("row has to be between 0 and 8");
 		if (column < 0 || column > 8)
 			throw new Exception("column has to be between 0 and 8");
-		if (number < 0 || number > 8)
-			throw new Exception("number has to be between 0 and 8");
+		if (number < 1 || number > 9)
+			throw new Exception("number has to be between 1 and 9");
+		if(board[row][column].posibilities.size() == 0)
+			return;
 
 		ArrayList<Integer> newPosibilities = new ArrayList<Integer>();
 		ArrayList<Integer> posibilities = board[row][column].posibilities;
@@ -132,9 +180,5 @@ public class Sudoku {
 			board[row][column].number = newPosibilities.get(0);
 			board[row][column].posibilities.clear();
 		}
-	}
-	
-	public Field getField(int row, int column) {
-		return board[row][column];
 	}
 }

@@ -1,24 +1,32 @@
+import io.SudokuReader;
+
 import java.util.*;
+import java.io.*;
 import model.*;
+import solver.*;
 
 public class Main {
 	public static void main(String args[]) throws Exception {
-		String s = "211111112211111111111111111111111111111111111111111111111111111111111111111111111";
-		String s2 = "023456789123456789123456789123456789123456789123456789123456789123456789123456789";
-		//Sudoku sudoku = new Sudoku(s);
-		Sudoku sudoku2 = new Sudoku(s2);
-		//System.out.println(sudoku.toString());
+		SudokuReader sr = new SudokuReader(new File("sudokus.txt"));
+		ArrayList<Sudoku> sudokus = sr.read();
 		
-		sudoku2.removePosibility(0, 0, 1);
-		ArrayList<Integer> pos = sudoku2.getField(0, 0).posibilities;
-		for (int i = 0; i < pos.size(); i++) {
+		for (int i = 0; i < sudokus.size(); i++) {
+			System.out.println(sudokus.get(i).toString());
+		}
+		BasicSolver basicSolver = new BasicSolver();
+		
+		ArrayList<Integer> pos = sudokus.get(3).getField(0, 1).posibilities;
+		for(int i = 0; i < pos.size(); i++) {
 			System.out.println(pos.get(i));
 		}
-
-		/*
-		 * System.out.println(sudoku2.toString()); Field[] row =
-		 * sudoku2.getBlock(2); for(int i = 0; i < 9; i++){
-		 * System.out.println(row[i].toString()); }
-		 */
+		
+		
+		Sudoku scanned = sudokus.get(3);
+		int oldCount = scanned.numberCount();
+		
+		while (oldCount <  basicSolver.scan(scanned).numberCount()) {
+			oldCount = basicSolver.scan(scanned).numberCount();
+			System.out.println(scanned.toString());
+		}
 	}
 }
