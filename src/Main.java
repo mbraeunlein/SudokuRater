@@ -8,25 +8,45 @@ import solver.*;
 public class Main {
 	public static void main(String args[]) throws Exception {
 		SudokuReader sr = new SudokuReader(new File("sudokus.txt"));
+
 		ArrayList<Sudoku> sudokus = sr.read();
-		
-		for (int i = 0; i < sudokus.size(); i++) {
-			System.out.println(sudokus.get(i).toString());
-		}
-		BasicSolver basicSolver = new BasicSolver();
-		
-		ArrayList<Integer> pos = sudokus.get(3).getField(0, 1).posibilities;
-		for(int i = 0; i < pos.size(); i++) {
-			System.out.println(pos.get(i));
-		}
-		
-		
-		Sudoku scanned = sudokus.get(3);
-		int oldCount = scanned.numberCount();
-		
-		while (oldCount <  basicSolver.scan(scanned).numberCount()) {
-			oldCount = basicSolver.scan(scanned).numberCount();
-			System.out.println(scanned.toString());
+		Sudoku sudoku = sudokus.get(3);
+		Solver solver = new Solver();
+		System.out.println(sudoku);
+		solver.tripel(sudoku);
+//		Sudoku sudoku = sudokus.get(2);
+//		solve(sudoku);
+//		
+	}
+
+	public static void solve(Sudoku sudoku) throws Exception {
+		System.out.println(sudoku);
+		if(sudoku.numberCount() == 81)
+			return;
+		Solver solver = new Solver();
+		int oldNumberCount = sudoku.numberCount();
+		sudoku = solver.excludePossibilities(sudoku);
+		int newNumberCount = sudoku.numberCount();
+
+		// start solving with the easiest method as long as something changes
+		if (oldNumberCount < newNumberCount)
+			solve(sudoku);
+		else {
+			// if nothing changed, try another method
+			sudoku = solver.scan(sudoku);
+			newNumberCount = sudoku.numberCount();
+
+			// start solving with the easiest method as long as something
+			// changes
+			if (oldNumberCount < newNumberCount)
+				solve(sudoku);
+			else {
+				int oldPossibilityCount = sudoku.possibilityCount();
+				sudoku = solver.tupel(sudoku);
+				int newPossibilityCount = sudoku.possibilityCount();
+				if (oldPossibilityCount < newPossibilityCount)
+					solve(sudoku);
+			}
 		}
 	}
 }

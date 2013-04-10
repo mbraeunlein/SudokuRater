@@ -46,89 +46,125 @@ public class Sudoku {
 		return s;
 	}
 
-	// return a row identified by a number between 0 and 8
-	public Field[] getRow(int number) throws Exception {
-		if (number < 0 || number > 8) {
-			throw new Exception("the number has to be between 0 and 8");
+	public void setField(int row, int column, Field field) {
+		board[row][column] = field;
+	}
+	
+	public void setFieldInBlock(int blockNumber, int position, Field field) throws Exception {
+		if (blockNumber < 0 || blockNumber > 8) {
+			throw new Exception("the block number has to be between 0 and 8");
 		}
-		Field[] row = new Field[9];
-		for (int i = 0; i < 9; i++) {
-			row[i] = board[number][i];
+		if (position < 0 || position > 8) {
+			throw new Exception("the position has to be between 0 and 8");
 		}
-		return row;
+
+		// calculate x and y position of the block
+		int xBlockOffset = blockNumber % 3;
+		int yBlockOffset = 0;
+
+		if (blockNumber > 2)
+			yBlockOffset = 1;
+		if (blockNumber > 5)
+			yBlockOffset = 2;
+
+		// calculate x and y position in the block
+		int xInBlockOffset = position % 3;
+		int yInBlockOffset = 0;
+		
+		if (position > 2)
+			yInBlockOffset = 1;
+		if (position > 5)
+			yInBlockOffset = 2;
+		
+		int xOffset = 3 * xBlockOffset + xInBlockOffset;
+		int yOffset = 3 * yBlockOffset + yInBlockOffset;
+		
+		board[yOffset][xOffset] = field;
 	}
 
-	// returns a column identified by a number between 0 and 8
-	public Field[] getColumn(int number) throws Exception {
-		if (number < 0 || number > 8) {
-			throw new Exception("the number has to be between 0 and 8");
+	public Field[] get(Figure figure, int number) throws Exception {
+		if (figure == Figure.Row) {
+			if (number < 0 || number > 8) {
+				throw new Exception("the number has to be between 0 and 8");
+			}
+			Field[] row = new Field[9];
+			for (int i = 0; i < 9; i++) {
+				row[i] = board[number][i];
+			}
+			return row;
 		}
-		Field[] column = new Field[9];
-		for (int i = 0; i < 9; i++) {
-			column[i] = board[i][number];
+		if (figure == Figure.Column) {
+			if (number < 0 || number > 8) {
+				throw new Exception("the number has to be between 0 and 8");
+			}
+			Field[] column = new Field[9];
+			for (int i = 0; i < 9; i++) {
+				column[i] = board[i][number];
+			}
+			return column;
 		}
-		return column;
+		if (figure == Figure.Block) {
+			if (number < 0 || number > 8) {
+				throw new Exception("the number has to be between 0 and 8");
+			}
+			Field[] block = new Field[9];
+
+			int xStart = number % 3;
+			int yStart = 0;
+
+			if (number > 2)
+				yStart = 1;
+			if (number > 5)
+				yStart = 2;
+
+			for (int i = 0; i < 3; i++) {
+				for (int j = 0; j < 3; j++) {
+					block[3 * i + j] = board[yStart * 3 + i][xStart * 3 + j];
+				}
+			}
+			return block;
+		}
+		
+		throw new Exception("the given figure isnt yet implemented");
 	}
 
 	public int getContainingBlockNumber(int row, int column) {
 		int number = 0;
-		
-		if(row < 9) {
-			if(column < 9)
+
+		if (row < 9) {
+			if (column < 9)
 				number = 8;
-			if(column < 6)
+			if (column < 6)
 				number = 7;
-			if(column < 3)
+			if (column < 3)
 				number = 6;
 		}
-		if(row < 6) {
-			if(column < 9)
+		if (row < 6) {
+			if (column < 9)
 				number = 5;
-			if(column < 6)
+			if (column < 6)
 				number = 4;
-			if(column < 3)
+			if (column < 3)
 				number = 3;
 		}
-		if(row < 3) {
-			if(column < 9)
+		if (row < 3) {
+			if (column < 9)
 				number = 2;
-			if(column < 6)
+			if (column < 6)
 				number = 1;
-			if(column < 3)
+			if (column < 3)
 				number = 0;
 		}
 		return number;
 	}
-	// returns a block identified by a number between 0 and 8
-	public Field[] getBlock(int number) throws Exception {
-		if (number < 0 || number > 8) {
-			throw new Exception("the number has to be between 0 and 8");
-		}
-		Field[] block = new Field[9];
 
-		int xStart = number % 3;
-		int yStart = 0;
-
-		if (number > 2)
-			yStart = 1;
-		if (number > 5)
-			yStart = 2;
-
-		for (int i = 0; i < 3; i++) {
-			for (int j = 0; j < 3; j++) {
-				block[3 * i + j] = board[yStart * 3 + i][xStart * 3 + j];
-			}
-		}
-		return block;
-	}
-	
 	// return the field identified by the row and column
 	public Field getField(int row, int column) {
 		return board[row][column];
 	}
 
 	// the number of possible numbers to insert
-	public int constraintCount() {
+	public int possibilityCount() {
 		int count = 0;
 		for (int i = 0; i < 9; i++) {
 			for (int j = 0; j < 9; j++) {
@@ -137,13 +173,13 @@ public class Sudoku {
 		}
 		return count;
 	}
-	
+
 	// the number of filled fields
 	public int numberCount() {
 		int count = 0;
-		for(int i = 0; i < 9; i++) {
-			for(int j = 0; j < 9; j++) {
-				if(board[i][j].number != 0)
+		for (int i = 0; i < 9; i++) {
+			for (int j = 0; j < 9; j++) {
+				if (board[i][j].number != 0)
 					count += 1;
 			}
 		}
@@ -159,7 +195,7 @@ public class Sudoku {
 			throw new Exception("column has to be between 0 and 8");
 		if (number < 1 || number > 9)
 			throw new Exception("number has to be between 1 and 9");
-		if(board[row][column].posibilities.size() == 0)
+		if (board[row][column].posibilities.size() == 0)
 			return;
 
 		ArrayList<Integer> newPosibilities = new ArrayList<Integer>();
@@ -173,12 +209,39 @@ public class Sudoku {
 		if (newPosibilities.size() == 0)
 			throw new Exception("no possibilities left");
 
-		if (newPosibilities.size() > 1)
-			board[row][column].posibilities = newPosibilities;
-		if (newPosibilities.size() == 1)
-		{
-			board[row][column].number = newPosibilities.get(0);
-			board[row][column].posibilities.clear();
-		}
+		board[row][column].posibilities = newPosibilities;
 	}
+	
+	public void removePossibilityInBlock(int blockNumber, int position, int number) throws Exception {
+		if (blockNumber < 0 || blockNumber > 8) {
+			throw new Exception("the block number has to be between 0 and 8");
+		}
+		if (position < 0 || position > 8) {
+			throw new Exception("the position has to be between 0 and 8");
+		}
+
+		// calculate x and y position of the block
+		int xBlockOffset = blockNumber % 3;
+		int yBlockOffset = 0;
+
+		if (blockNumber > 2)
+			yBlockOffset = 1;
+		if (blockNumber > 5)
+			yBlockOffset = 2;
+
+		// calculate x and y position in the block
+		int xInBlockOffset = position % 3;
+		int yInBlockOffset = 0;
+		
+		if (position > 2)
+			yInBlockOffset = 1;
+		if (position > 5)
+			yInBlockOffset = 2;
+		
+		int xOffset = 3 * xBlockOffset + xInBlockOffset;
+		int yOffset = 3 * yBlockOffset + yInBlockOffset;
+		System.out.println("removing at " + xOffset + " / " + yOffset + " - " + number);
+		removePosibility(yOffset, xOffset, number);
+	}
+
 }

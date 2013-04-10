@@ -1,5 +1,5 @@
 package model;
 
 public enum Figure {
-	Row, Column, Box;
+	Row, Column, Block;
 }
