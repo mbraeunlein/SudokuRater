@@ -49,8 +49,9 @@ public class Sudoku {
 	public void setField(int row, int column, Field field) {
 		board[row][column] = field;
 	}
-	
-	public void setFieldInBlock(int blockNumber, int position, Field field) throws Exception {
+
+	public void setFieldInBlock(int blockNumber, int position, Field field)
+			throws Exception {
 		if (blockNumber < 0 || blockNumber > 8) {
 			throw new Exception("the block number has to be between 0 and 8");
 		}
@@ -70,15 +71,15 @@ public class Sudoku {
 		// calculate x and y position in the block
 		int xInBlockOffset = position % 3;
 		int yInBlockOffset = 0;
-		
+
 		if (position > 2)
 			yInBlockOffset = 1;
 		if (position > 5)
 			yInBlockOffset = 2;
-		
+
 		int xOffset = 3 * xBlockOffset + xInBlockOffset;
 		int yOffset = 3 * yBlockOffset + yInBlockOffset;
-		
+
 		board[yOffset][xOffset] = field;
 	}
 
@@ -124,7 +125,7 @@ public class Sudoku {
 			}
 			return block;
 		}
-		
+
 		throw new Exception("the given figure isnt yet implemented");
 	}
 
@@ -211,8 +212,9 @@ public class Sudoku {
 
 		board[row][column].posibilities = newPosibilities;
 	}
-	
-	public void removePossibilityInBlock(int blockNumber, int position, int number) throws Exception {
+
+	public void removePossibilityInBlock(int blockNumber, int position,
+			int number) throws Exception {
 		if (blockNumber < 0 || blockNumber > 8) {
 			throw new Exception("the block number has to be between 0 and 8");
 		}
@@ -232,16 +234,26 @@ public class Sudoku {
 		// calculate x and y position in the block
 		int xInBlockOffset = position % 3;
 		int yInBlockOffset = 0;
-		
+
 		if (position > 2)
 			yInBlockOffset = 1;
 		if (position > 5)
 			yInBlockOffset = 2;
-		
+
 		int xOffset = 3 * xBlockOffset + xInBlockOffset;
 		int yOffset = 3 * yBlockOffset + yInBlockOffset;
-		System.out.println("removing at " + xOffset + " / " + yOffset + " - " + number);
+		
 		removePosibility(yOffset, xOffset, number);
+	}
+
+	// indicates weather the given number is in the figure indetified by the id
+	public boolean isIn(Figure figure, int id, int number) throws Exception {
+		Field[] x = get(figure, id);
+		for (int i = 0; i < 9; i++) {
+			if(number == x[i].number)
+				return true;
+		}
+		return false;
 	}
 
 }

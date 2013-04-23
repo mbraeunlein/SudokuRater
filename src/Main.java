@@ -10,13 +10,11 @@ public class Main {
 		SudokuReader sr = new SudokuReader(new File("sudokus.txt"));
 
 		ArrayList<Sudoku> sudokus = sr.read();
-		Sudoku sudoku = sudokus.get(3);
-		Solver solver = new Solver();
-		System.out.println(sudoku);
-		solver.tripel(sudoku);
-//		Sudoku sudoku = sudokus.get(2);
-//		solve(sudoku);
-//		
+		Sudoku sudoku = sudokus.get(5);
+//		Solver solver = new Solver();
+//		System.out.println(sudoku);
+//		solver.crossing(sudoku);
+		solve(sudoku);
 	}
 
 	public static void solve(Sudoku sudoku) throws Exception {
@@ -44,8 +42,20 @@ public class Main {
 				int oldPossibilityCount = sudoku.possibilityCount();
 				sudoku = solver.tupel(sudoku);
 				int newPossibilityCount = sudoku.possibilityCount();
-				if (oldPossibilityCount < newPossibilityCount)
+				if (oldPossibilityCount > newPossibilityCount)
 					solve(sudoku);
+				else {
+					sudoku = solver.tripel(sudoku);
+					newPossibilityCount = sudoku.possibilityCount();
+					if (oldPossibilityCount > newPossibilityCount)
+						solve(sudoku);
+					else {
+						sudoku = solver.crossing(sudoku);
+						newPossibilityCount = sudoku.possibilityCount();
+						if (oldPossibilityCount > newPossibilityCount)
+							solve(sudoku);
+					}
+				}
 			}
 		}
 	}
