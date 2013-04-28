@@ -611,162 +611,472 @@ public class Solver {
 	public Sudoku crossing(Sudoku sudoku) throws Exception {
 		sudoku = updateConstraints(sudoku);
 
-		// iterate over every block (row and column)
-		for (int rowNumber = 0; rowNumber < 3; rowNumber++) {
-			for (int colNumber = 0; colNumber < 3; colNumber++) {
-				// get the current block
-				Field[] block = sudoku.get(Figure.Block, 3 * rowNumber
-						+ colNumber);
-
-				// iterate over every row that crosses the block
-				for (int crossRowNumber = 0; crossRowNumber < 3; crossRowNumber++) {
-					// get the current row
-					Field[] row = sudoku.get(Figure.Row, 3 * rowNumber
-							+ crossRowNumber);
-
-					// iterate over every number
-					for (int number = 1; number < 10; number++) {
-						boolean crossing = true;
-						if (sudoku.isIn(Figure.Row, 3 * rowNumber
-								+ crossRowNumber, number)
-								|| sudoku.isIn(Figure.Block, 3 * rowNumber
-										+ colNumber, number)) {
-							crossing = false;
-						}
-						// iterate over every field in the row
-						for (int field = 0; field < 9; field++) {
-							// the fields of the row, that are also fields
-							// of the block are not relevant
-							if (!(field == colNumber * 3)
-									&& !(field == colNumber * 3 + 1)
-									&& !(field == colNumber * 3 + 2))
-								// if an other field of the row contains the
-								// number as a possibility the crossing rule
-								// is not applicable
-								if (row[field].posibilities.contains(number))
-									crossing = false;
-						}
-						if (crossing) {
-							// if a crossing was found then remove the
-							// possibilities
-							int posCount = 0;
-							for (int field = 0; field < 9; field++) {
-								if (!(field == crossRowNumber * 3)
-										&& !(field == crossRowNumber * 3 + 1)
-										&& !(field == crossRowNumber * 3 + 2))
-									if (block[field].posibilities
-											.contains(number)) {
-										sudoku.removePossibilityInBlock(
-												(3 * rowNumber + colNumber),
-												field, number);
-										posCount++;
-									}
-							}
-
-							if (posCount > 0) {
-								System.out.println("crossing block "
-										+ (3 * rowNumber + colNumber) + " row "
-										+ (3 * rowNumber + crossRowNumber)
-										+ " number " + number + " ... removed "
-										+ posCount + " possibilities");
-								return sudoku;
-							}
-						}
-
-					}
-				}
-			}
-		}
-
-		for (int rowNumber = 0; rowNumber < 3; rowNumber++) {
-			for (int colNumber = 0; colNumber < 3; colNumber++) {
-				// get the block
-				Field[] block = sudoku.get(Figure.Block, 3 * rowNumber
-						+ colNumber);
-
-				for (int crossColNumber = 0; crossColNumber < 3; crossColNumber++) {
-					// get the crossing column
-					Field[] col = sudoku.get(Figure.Column, colNumber * 3
-							+ crossColNumber);
-
-					for (int number = 1; number < 10; number++) {
-						boolean crossing = true;
-						if (sudoku.isIn(Figure.Column, 3 * colNumber
-								+ crossColNumber, number)
-								|| sudoku.isIn(Figure.Block, 3 * rowNumber
-										+ colNumber, number)) {
-							crossing = false;
-						}
-						for (int field = 0; field < 9; field++) {
-							if (!(field == rowNumber * 3)
-									&& !(field == rowNumber * 3 + 1)
-									&& !(field == rowNumber * 3 + 2)) {
-								if (col[field].posibilities.contains(number))
-									crossing = false;
-							}
-						}
-						if (crossing) {
-							int posCount = 0;
-							for (int field = 0; field < 9; field++) {
-								if (!(field == crossColNumber)
-										&& !(field == crossColNumber + 3)
-										&& !(field == crossColNumber + 6)) {
-									if (block[field].posibilities
-											.contains(number)) {
-										sudoku.removePossibilityInBlock(3
-												* rowNumber + colNumber, field,
-												number);
-										posCount++;
-									}
-								}
-							}
-							if (posCount > 0) {
-								System.out.println("crossing block "
-										+ (3 * rowNumber + colNumber)
-										+ " column "
-										+ (3 * colNumber + crossColNumber)
-										+ " number " + number + " ... removed "
-										+ posCount + " possibilities");
-								return sudoku;
-							}
-						}
-
-					}
-				}
-			}
-		}
-
-		/*
-		// iterate over every row and column
+		// iterate over every block
 		for (int row = 0; row < 3; row++) {
 			for (int col = 0; col < 3; col++) {
-				Field[] block = sudoku.get(Figure.Block, 3 * row + col);
 				// iterate over every row in the block
+				// and create 3 lists of numbers
+				ArrayList<ArrayList<Integer>> numberLists = new ArrayList<ArrayList<Integer>>();
+				numberLists.add(new ArrayList<Integer>());
+				numberLists.add(new ArrayList<Integer>());
+				numberLists.add(new ArrayList<Integer>());
+
 				for (int crossRow = 0; crossRow < 3; crossRow++) {
-					ArrayList<ArrayList<Integer>> numberList = new ArrayList<ArrayList<Integer>>();
 					// iterate over every field in the row
 					for (int f = 0; f < 3; f++) {
 						Field field = sudoku.getField(3 * row + crossRow, 3
 								* col + f);
-						// iterate over the possibilities of every field
+						// iterate over every possibility of the field
 						for (int i = 0; i < field.posibilities.size(); i++) {
-							// add all possibilities to a list of numbers for
-							// the specific row
-							if (!numberList.get(f).contains(
+							if (!numberLists.get(crossRow).contains(
 									field.posibilities.get(i)))
-								numberList.get(f)
-										.add(field.posibilities.get(i));
+								numberLists.get(crossRow).add(
+										field.posibilities.get(i));
 						}
 					}
-					// iterate over every possible number
-					for (int number = 1; number < 10; number++) {
-						if(numberList.get(0).contains(number)) {
-							
+				}
+
+				for (int number = 1; number < 10; number++) {
+					if (numberLists.get(0).contains(number)
+							&& !numberLists.get(1).contains(number)
+							&& !numberLists.get(2).contains(number)) {
+						// crossing found, check if there are possibilities to
+						// remove
+						int posCount = 0;
+						for (int f = 0; f < 9; f++) {
+							// ignore the fields, that belong to the block
+							if (f != 3 * col && f != 3 * col + 1
+									&& f != 3 * col + 2) {
+								Field field = sudoku.getField(3 * row, f);
+								if (field.posibilities.contains(number)) {
+									sudoku.removePosibility(3 * row, f, number);
+									System.out.println("removing " + 3 * row
+											+ " / " + f + " - " + number);
+									posCount++;
+								}
+							}
+						}
+						if (posCount > 0) {
+							System.out.println("row - block - crossing block "
+									+ (3 * row + col) + " row " + (3 * row)
+									+ " number " + number + " removed "
+									+ posCount + " possibilities");
+							return sudoku;
+
+						}
+					}
+					if (!numberLists.get(0).contains(number)
+							&& numberLists.get(1).contains(number)
+							&& !numberLists.get(2).contains(number)) {
+						// crossing found, check if there are possibilities to
+						// remove
+						int posCount = 0;
+						for (int f = 0; f < 9; f++) {
+							// ignore the fields, that belong to the block
+							if (f != col * 3 && f != col * 3 + 1
+									&& f != col * 3 + 2) {
+								Field field = sudoku.getField(3 * row + 1, f);
+								if (field.posibilities.contains(number)) {
+									sudoku.removePosibility(3 * row + 1, f,
+											number);
+									posCount++;
+								}
+							}
+						}
+						if (posCount > 0) {
+							System.out.println("row - block - crossing block "
+									+ (3 * row + col) + " row " + (3 * row + 1)
+									+ " number " + number + " removed "
+									+ posCount + " possibilities");
+							return sudoku;
+
+						}
+					}
+					if (!numberLists.get(0).contains(number)
+							&& !numberLists.get(1).contains(number)
+							&& numberLists.get(2).contains(number)) {
+						// crossing found, check if there are possibilities to
+						// remove
+						int posCount = 0;
+						for (int f = 0; f < 9; f++) {
+							// ignore the fields, that belong to the block
+							if (f != col * 3 && f != col * 3 + 1
+									&& f != col * 3 + 2) {
+								Field field = sudoku.getField(3 * row + 2, f);
+								if (field.posibilities.contains(number)) {
+									sudoku.removePosibility(3 * row + 2, f,
+											number);
+									posCount++;
+								}
+							}
+						}
+						if (posCount > 0) {
+							System.out.println("row - block - crossing block "
+									+ (3 * row + col) + " row " + (3 * row + 2)
+									+ " number " + number + " removed "
+									+ posCount + " possibilities");
+							return sudoku;
+
 						}
 					}
 				}
 			}
-		}*/
+		}
+
+		// iterate over every block
+		for (int row = 0; row < 3; row++) {
+			for (int col = 0; col < 3; col++) {
+				// iterate over every row in the block
+				// and create 3 lists of numbers
+				ArrayList<ArrayList<Integer>> numberLists = new ArrayList<ArrayList<Integer>>();
+				numberLists.add(new ArrayList<Integer>());
+				numberLists.add(new ArrayList<Integer>());
+				numberLists.add(new ArrayList<Integer>());
+
+				for (int crossCol = 0; crossCol < 3; crossCol++) {
+					// iterate over every field in the row
+					for (int f = 0; f < 3; f++) {
+						Field field = sudoku.getField(3 * row + f, 3 * col
+								+ crossCol);
+						// iterate over every possibility of the field
+						for (int i = 0; i < field.posibilities.size(); i++) {
+							if (!numberLists.get(crossCol).contains(
+									field.posibilities.get(i)))
+								numberLists.get(crossCol).add(
+										field.posibilities.get(i));
+						}
+					}
+				}
+
+				for (int number = 1; number < 10; number++) {
+					if (numberLists.get(0).contains(number)
+							&& !numberLists.get(1).contains(number)
+							&& !numberLists.get(2).contains(number)) {
+						// crossing found, check if there are possibilities to
+						// remove
+						int posCount = 0;
+						for (int f = 0; f < 9; f++) {
+							// ignore the fields, that belong to the block
+							if (f != 3 * row && f != 3 * row + 1
+									&& f != 3 * row + 2) {
+								Field field = sudoku.getField(f, 3 * col);
+								if (field.posibilities.contains(number)) {
+									sudoku.removePosibility(f, 3 * col, number);
+									System.out.println("removing " + f + " / "
+											+ 3 * col + " - " + number);
+									posCount++;
+								}
+							}
+						}
+						if (posCount > 0) {
+							System.out.println("col - block - crossing block "
+									+ (3 * row + col) + " row " + " number "
+									+ number + (3 * col) + " removed "
+									+ posCount + " possibilities");
+							return sudoku;
+
+						}
+					}
+					if (!numberLists.get(0).contains(number)
+							&& numberLists.get(1).contains(number)
+							&& !numberLists.get(2).contains(number)) {
+						// crossing found, check if there are possibilities to
+						// remove
+						int posCount = 0;
+						for (int f = 0; f < 9; f++) {
+							// ignore the fields, that belong to the block
+							if (f != 3 * row && f != 3 * row + 1
+									&& f != 3 * row + 2) {
+								Field field = sudoku.getField(f, 3 * col + 1);
+								if (field.posibilities.contains(number)) {
+									sudoku.removePosibility(f, 3 * col + 1,
+											number);
+									posCount++;
+								}
+							}
+						}
+						if (posCount > 0) {
+							System.out.println("col - block - crossing block "
+									+ (3 * row + col) + " col " + " number "
+									+ number + (3 * col + 1) + " removed "
+									+ posCount + " possibilities");
+							return sudoku;
+
+						}
+					}
+					if (!numberLists.get(0).contains(number)
+							&& !numberLists.get(1).contains(number)
+							&& numberLists.get(2).contains(number)) {
+						// crossing found, check if there are possibilities to
+						// remove
+						int posCount = 0;
+						for (int f = 0; f < 9; f++) {
+							// ignore the fields, that belong to the block
+							if (f != 3 * row && f != 3 * row + 1
+									&& f != 3 * row + 2) {
+								Field field = sudoku.getField(f, 3 * col + 2);
+								if (field.posibilities.contains(number)) {
+									sudoku.removePosibility(f, 3 * col + 2,
+											number);
+									posCount++;
+								}
+							}
+						}
+						if (posCount > 0) {
+							System.out.println("col - block - crossing block "
+									+ (3 * row + col) + " col " + " number "
+									+ number + (3 * col + 2) + " removed "
+									+ posCount + " possibilities");
+							return sudoku;
+
+						}
+					}
+				}
+			}
+		}
+
+		// iterate over every row
+		for (int row = 0; row < 9; row++) {
+			// iterate over 3 elements of the row (segment)
+			// create a list of possible numbers in the segments
+			ArrayList<ArrayList<Integer>> numberLists = new ArrayList<ArrayList<Integer>>();
+			numberLists.add(new ArrayList<Integer>());
+			numberLists.add(new ArrayList<Integer>());
+			numberLists.add(new ArrayList<Integer>());
+			for (int seg = 0; seg < 3; seg++) {
+				// iterate over every field in the segment
+				for (int f = 0; f < 3; f++) {
+					Field field = sudoku.getField(row, 3 * seg + f);
+					// iterate over every possibility of the field
+					for (int pos = 0; pos < field.posibilities.size(); pos++) {
+						if (!numberLists.get(seg).contains(
+								field.posibilities.get(pos)))
+							numberLists.get(seg).add(
+									field.posibilities.get(pos));
+					}
+				}
+			}
+
+			// if a number appears in one segment only it can be deleted from
+			// the rest of the block
+			// iterate over every number
+			for (int number = 1; number < 10; number++) {
+				if (numberLists.get(0).contains(number)
+						&& !numberLists.get(1).contains(number)
+						&& !numberLists.get(2).contains(number)) {
+					// crossing found, check if there are possibilities to
+					// remove
+					int posCount = 0;
+					int blockNumber = 6;
+					if (row < 6)
+						blockNumber = 3;
+					if (row < 3)
+						blockNumber = 0;
+					for (int f = 0; f < 9; f++) {
+						if (f != row % 3 * 3 && f != row % 3 * 3 + 1
+								&& f != row % 3 * 3 + 2) {
+							if (sudoku.get(Figure.Block, blockNumber)[f].posibilities
+									.contains(number)) {
+								sudoku.removePossibilityInBlock(blockNumber, f,
+										number);
+								System.out.println("row " + row);
+								System.out.println("removing block "
+										+ blockNumber + " position " + f
+										+ " - " + number);
+								posCount++;
+							}
+						}
+					}
+					if (posCount > 0) {
+						System.out.println("block - row - crossing block "
+								+ blockNumber + " row " + row + " number "
+								+ number + " removed " + posCount
+								+ " possibilities");
+						return sudoku;
+					}
+				}
+				if (!numberLists.get(0).contains(number)
+						&& numberLists.get(1).contains(number)
+						&& !numberLists.get(2).contains(number)) {
+					// crossing found, check if there are possibilities to
+					// remove
+					int posCount = 0;
+					int blockNumber = 7;
+					if (row < 6)
+						blockNumber = 4;
+					if (row < 3)
+						blockNumber = 1;
+					for (int f = 0; f < 9; f++) {
+						if (f != row % 3 * 3  && f != row % 3 * 3  + 1
+								&& f != row % 3 * 3  + 2) {
+							if (sudoku.get(Figure.Block, blockNumber)[f].posibilities
+									.contains(number)) {
+								sudoku.removePossibilityInBlock(blockNumber, f,
+										number);
+								posCount++;
+							}
+						}
+					}
+					if (posCount > 0) {
+						System.out.println("block - row - crossing block "
+								+ blockNumber + " row " + row + " number "
+								+ number + " removed " + posCount
+								+ " possibilities");
+						return sudoku;
+					}
+				}
+				if (!numberLists.get(0).contains(number)
+						&& !numberLists.get(1).contains(number)
+						&& numberLists.get(2).contains(number)) {
+					// crossing found, check if there are possibilities to
+					// remove
+					int posCount = 0;
+					int blockNumber = 8;
+					if (row < 6)
+						blockNumber = 5;
+					if (row < 3)
+						blockNumber = 2;
+					for (int f = 0; f < 9; f++) {
+						if (f != row % 3 * 3 && f != row % 3 * 3 + 1
+								&& f != row % 3 * 3 + 2) {
+							if (sudoku.get(Figure.Block, blockNumber)[f].posibilities
+									.contains(number)) {
+								sudoku.removePossibilityInBlock(blockNumber, f,
+										number);
+								System.out.println("removing block " + blockNumber + " position " + f + " - " +number);
+								posCount++;
+							}
+						}
+					}
+					if (posCount > 0) {
+						System.out.println("block - row - crossing block "
+								+ blockNumber + " row " + row + " number "
+								+ number + " removed " + posCount
+								+ " possibilities");
+						return sudoku;
+					}
+				}
+			}
+		}
+
+		// iterate over every column
+		for (int col = 0; col < 9; col++) {
+			// iterate over 3 elements of the row (segment)
+			// create a list of possible numbers in the segments
+			ArrayList<ArrayList<Integer>> numberLists = new ArrayList<ArrayList<Integer>>();
+			numberLists.add(new ArrayList<Integer>());
+			numberLists.add(new ArrayList<Integer>());
+			numberLists.add(new ArrayList<Integer>());
+			for (int seg = 0; seg < 3; seg++) {
+				// iterate over every field in the segment
+				for (int f = 0; f < 3; f++) {
+					Field field = sudoku.getField(3 * seg + f, col);
+					// iterate over every possibility of the field
+					for (int pos = 0; pos < field.posibilities.size(); pos++) {
+						if (!numberLists.get(seg).contains(
+								field.posibilities.get(pos)))
+							numberLists.get(seg).add(
+									field.posibilities.get(pos));
+					}
+				}
+			}
+
+			// if a number appears in one segment only it can be deleted from
+			// the rest of the block
+			// iterate over every number
+			for (int number = 1; number < 10; number++) {
+				if (numberLists.get(0).contains(number)
+						&& !numberLists.get(1).contains(number)
+						&& !numberLists.get(2).contains(number)) {
+					// crossing found, check if there are possibilities to
+					// remove
+					int posCount = 0;
+					int blockNumber = 2;
+					if (col < 1)
+						blockNumber = 1;
+					if (col < 3)
+						blockNumber = 0;
+					for (int f = 0; f < 9; f++) {
+						if (f != col % 3 && f != col % 3 + 3
+								&& f != col % 3 + 6) {
+							if (sudoku.get(Figure.Block, blockNumber)[f].posibilities
+									.contains(number)) {
+								sudoku.removePossibilityInBlock(blockNumber, f,
+										number);
+								posCount++;
+							}
+						}
+					}
+					if (posCount > 0) {
+						System.out.println("block - col - crossing block "
+								+ blockNumber + " col " + col + " number "
+								+ number + " removed " + posCount
+								+ " possibilities");
+						return sudoku;
+					}
+				}
+				if (!numberLists.get(0).contains(number)
+						&& numberLists.get(1).contains(number)
+						&& !numberLists.get(2).contains(number)) {
+					// crossing found, check if there are possibilities to
+					// remove
+					int posCount = 0;
+					int blockNumber = 5;
+					if (col < 1)
+						blockNumber = 4;
+					if (col < 3)
+						blockNumber = 3;
+					for (int f = 0; f < 9; f++) {
+						if (f != col % 3 && f != col % 3 + 3
+								&& f != col % 3 + 6) {
+							if (sudoku.get(Figure.Block, blockNumber)[f].posibilities
+									.contains(number)) {
+								sudoku.removePossibilityInBlock(blockNumber, f,
+										number);
+								posCount++;
+							}
+						}
+					}
+					if (posCount > 0) {
+						System.out.println("block - col - crossing block "
+								+ blockNumber + " col " + col + " number "
+								+ number + " removed " + posCount
+								+ " possibilities");
+						return sudoku;
+					}
+				}
+				if (!numberLists.get(0).contains(number)
+						&& !numberLists.get(1).contains(number)
+						&& numberLists.get(2).contains(number)) {
+					// crossing found, check if there are possibilities to
+					// remove
+					int posCount = 0;
+					int blockNumber = 8;
+					if (col < 1)
+						blockNumber = 7;
+					if (col < 3)
+						blockNumber = 6;
+					for (int f = 0; f < 9; f++) {
+						if (f != col % 3 && f != col % 3 + 3
+								&& f != col % 3 + 6) {
+							if (sudoku.get(Figure.Block, blockNumber)[f].posibilities
+									.contains(number)) {
+								sudoku.removePossibilityInBlock(blockNumber, f,
+										number);
+								posCount++;
+							}
+						}
+					}
+					if (posCount > 0) {
+						System.out.println("block - col - crossing block "
+								+ blockNumber + " col " + col + " number "
+								+ number + " removed " + posCount
+								+ " possibilities");
+						return sudoku;
+					}
+				}
+			}
+		}
 
 		return sudoku;
 	}

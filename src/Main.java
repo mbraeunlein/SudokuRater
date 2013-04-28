@@ -10,10 +10,7 @@ public class Main {
 		SudokuReader sr = new SudokuReader(new File("sudokus.txt"));
 
 		ArrayList<Sudoku> sudokus = sr.read();
-		Sudoku sudoku = sudokus.get(5);
-//		Solver solver = new Solver();
-//		System.out.println(sudoku);
-//		solver.crossing(sudoku);
+		Sudoku sudoku = sudokus.get(2);
 		solve(sudoku);
 	}
 
