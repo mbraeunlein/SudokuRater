@@ -2,7 +2,7 @@ package model;
 
 import java.util.*;
 
-public class Sudoku {
+public class Sudoku implements Cloneable{
 	// Erst Reihe dann Spalte
 	private Field[][] board = new Field[9][9];
 
@@ -30,7 +30,7 @@ public class Sudoku {
 			System.out.println("Error while parsing Sudoku." + e.getMessage());
 		}
 	}
-
+	
 	public String toString() {
 		String s = "";
 		for (int i = 0; i < 9; i++) {
@@ -242,7 +242,7 @@ public class Sudoku {
 
 		int xOffset = 3 * xBlockOffset + xInBlockOffset;
 		int yOffset = 3 * yBlockOffset + yInBlockOffset;
-		
+
 		removePosibility(yOffset, xOffset, number);
 	}
 
@@ -250,10 +250,46 @@ public class Sudoku {
 	public boolean isIn(Figure figure, int id, int number) throws Exception {
 		Field[] x = get(figure, id);
 		for (int i = 0; i < 9; i++) {
-			if(number == x[i].number)
+			if (number == x[i].number)
 				return true;
 		}
 		return false;
+	}
+
+	public boolean equals(Object obj) {
+		if (obj == null)
+			return false;
+		if (obj == this)
+			return true;
+		if (!(obj instanceof Sudoku))
+			return false;
+		Sudoku sudoku = (Sudoku) obj;
+
+		for (int row = 0; row < 9; row++) {
+			for (int col = 0; col < 9; col++) {
+				Field field = sudoku.getField(row, col);
+				// are the numbers equal?
+				if (field.number != 0) {
+					if (field.number != this.getField(row, col).number) {
+						return false;
+					}
+				} else {
+					// are the possibilities equal?
+					if (field.posibilities.size() == this.getField(row, col).posibilities
+							.size()) {
+						for (int pos = 0; pos < field.posibilities.size(); pos++) {
+							if (field.posibilities.get(pos) != this.getField(row,
+									col).posibilities.get(pos))
+								return false;
+						}
+					} else {
+						return false;
+					}
+				}
+			}
+		}
+
+		return true;
 	}
 
 }
