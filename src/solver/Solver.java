@@ -23,14 +23,14 @@ public class Solver {
 	public Sudoku getSudoku() {
 		return sudoku;
 	}
-	
+
 	public Sudoku step() {
 		try {
 			updateConstraints();
-			
+
 			switch (count) {
 			case 0:
-				if(nakedSingles()) {
+				if (nakedSingles()) {
 					count = 0;
 					break;
 				} else {
@@ -39,7 +39,7 @@ public class Solver {
 					break;
 				}
 			case 1:
-				if(hiddenSingles()) {
+				if (hiddenSingles()) {
 					count = 0;
 					break;
 				} else {
@@ -48,7 +48,7 @@ public class Solver {
 					break;
 				}
 			case 2:
-				if(nakedTupel()) {
+				if (nakedTupel()) {
 					count = 0;
 					break;
 				} else {
@@ -56,8 +56,17 @@ public class Solver {
 					count++;
 					break;
 				}
+			/*case 3:
+				if (hiddenTupel()) {
+					count = 0;
+					break;
+				} else {
+					System.out.println("no hidden tupel found");
+					count++;
+					break;
+				}*/
 			case 3:
-				if(nakedTripel()) {
+				if (nakedTripel()) {
 					count = 0;
 					break;
 				} else {
@@ -66,7 +75,7 @@ public class Solver {
 					break;
 				}
 			case 4:
-				if(crossing()) {
+				if (crossing()) {
 					count = 0;
 					break;
 				} else {
@@ -575,24 +584,24 @@ public class Solver {
 		return false;
 	}
 
-	// ------------------------------------------------------------------------------------
-	// ------------------------------------------------------------------------------------
-	// NEW
-	// ------------------------------------------------------------------------------------
-	// ------------------------------------------------------------------------------------
-
 	private void updateConstraints() throws Exception {
-		for(int row = 0; row < 9; row++) {
-			for(int col = 0; col < 9; col++) {
+		for (int row = 0; row < 9; row++) {
+			for (int col = 0; col < 9; col++) {
 				int number = sudoku.getField(row, col).number;
-				if(number != 0) {
-					for(int pos = 0; pos < 9; pos++) {
-						if(sudoku.getField(row, pos).posibilities.contains(number))
+				if (number != 0) {
+					for (int pos = 0; pos < 9; pos++) {
+						if (sudoku.getField(row, pos).posibilities
+								.contains(number))
 							sudoku.removePosibility(row, pos, number);
-						if(sudoku.getField(pos, col).posibilities.contains(number))
+						if (sudoku.getField(pos, col).posibilities
+								.contains(number))
 							sudoku.removePosibility(pos, col, number);
-						if(sudoku.get(Figure.Block, sudoku.getContainingBlockNumber(row, col))[pos].posibilities.contains(number))
-							sudoku.removePossibilityInBlock(sudoku.getContainingBlockNumber(row, col), pos, number);
+						if (sudoku.get(Figure.Block,
+								sudoku.getContainingBlockNumber(row, col))[pos].posibilities
+								.contains(number))
+							sudoku.removePossibilityInBlock(
+									sudoku.getContainingBlockNumber(row, col),
+									pos, number);
 					}
 				}
 			}
@@ -645,7 +654,7 @@ public class Solver {
 		}
 		return false;
 	}
-	
+
 	private boolean hiddenSingles() throws Exception {
 
 		// iterate over every figure
@@ -1130,9 +1139,151 @@ public class Solver {
 					Figure.Column, f, sudoku);
 			HashMap<Integer, ArrayList<Integer>> blockPositionList = getPositionList(
 					Figure.Block, f, sudoku);
+
+			// compare 2 fields
+			for (int i = 0; i < 9; i++) {
+				for (int j = i + 1; j < 9; j++) {
+					// check if both numbers are possibilities in this figure
+					if (rowPositionList.containsKey(i)
+							&& rowPositionList.containsKey(j)) {
+						// positions of the first number
+						ArrayList<Integer> positions1 = rowPositionList.get(i);
+						// positions of the second number
+						ArrayList<Integer> positions2 = rowPositionList.get(j);
+
+						// check if the numbers can stand on 2 positions only
+						if (positions1.size() == 2 && positions2.size() == 2) {
+							// check if the positions of the numbers are equal
+							if (positions1.get(0) == positions2.get(0)
+									&& positions1.get(1) == positions2.get(1)) {
+								// hidden tupel found
+								
+								Field newField = new Field();
+								newField.number = 0;
+								newField.posibilities.add(i);
+								newField.posibilities.add(j);
+
+								sudoku.setField(f, positions1.get(0), newField);
+								sudoku.setField(f, positions1.get(1), newField);
+
+								if (sudoku.getField(f, positions1.get(0)).posibilities
+										.size() > 2) {
+									System.out
+											.println("hidden tupel row "
+													+ f
+													+ " numbers "
+													+ i
+													+ ", "
+													+ j
+													+ " removed "
+													+ sudoku.getField(f,
+															positions1.get(0)).posibilities
+															.size()
+													+ " possibilities");
+									return true;
+								}
+							}
+						}
+					}
+					// check if both numbers are possibilities in this figure
+					if (colPositionList.containsKey(i)
+							&& colPositionList.containsKey(j)) {
+						// positions of the first number
+						ArrayList<Integer> positions1 = colPositionList.get(i);
+						// positions of the second number
+						ArrayList<Integer> positions2 = colPositionList.get(j);
+
+						// check if the numbers can stand on 2 positions only
+						if (positions1.size() == 2 && positions2.size() == 2) {
+							// check if the positions of the numbers are equal
+							if (positions1.get(0) == positions2.get(0)
+									&& positions1.get(1) == positions2.get(1)) {
+								// hidden tupel found, remove it from the row
+								int posCount = 0;
+								for (int pos = 0; pos < 9; pos++) {
+									if (pos != positions1.get(0)
+											&& pos != positions1.get(1)) {
+										if (sudoku.getField(pos, f).posibilities
+												.contains(i)) {
+											System.out.println("removing row "
+													+ pos + " col " + f + " - "
+													+ i);
+											sudoku.removePosibility(pos, f, i);
+											posCount++;
+										}
+										if (sudoku.getField(pos, f).posibilities
+												.contains(j)) {
+											System.out.println("removing row "
+													+ pos + " col " + f + " - "
+													+ j);
+											sudoku.removePosibility(pos, f, j);
+											posCount++;
+										}
+									}
+								}
+								if (posCount > 0) {
+									System.out.println("hidden tupel col " + f
+											+ " numbers " + i + ", " + j);
+									return true;
+								}
+							}
+						}
+					}
+					// check if both numbers are possibilities in this figure
+					if (blockPositionList.containsKey(i)
+							&& blockPositionList.containsKey(j)) {
+						// positions of the first number
+						ArrayList<Integer> positions1 = blockPositionList
+								.get(i);
+						// positions of the second number
+						ArrayList<Integer> positions2 = blockPositionList
+								.get(j);
+
+						// check if the numbers can stand on 2 positions only
+						if (positions1.size() == 2 && positions2.size() == 2) {
+							// check if the positions of the numbers are equal
+							if (positions1.get(0) == positions2.get(0)
+									&& positions1.get(1) == positions2.get(1)) {
+								// hidden tupel found, remove it from the row
+								int posCount = 0;
+								for (int pos = 0; pos < 9; pos++) {
+									if (pos != positions1.get(0)
+											&& pos != positions1.get(1)) {
+										Field[] block = sudoku.get(
+												Figure.Block, f);
+										if (block[pos].posibilities.contains(i)) {
+											System.out
+													.println("removing block "
+															+ f + " position "
+															+ pos + " - " + i);
+											sudoku.removePossibilityInBlock(f,
+													pos, i);
+											posCount++;
+										}
+										if (sudoku.getField(f, pos).posibilities
+												.contains(j)) {
+											System.out
+													.println("removing block "
+															+ f + " position "
+															+ pos + " - " + j);
+											sudoku.removePossibilityInBlock(f,
+													pos, j);
+											posCount++;
+										}
+									}
+								}
+								if (posCount > 0) {
+									System.out.println("hidden tupel block "
+											+ f + " numbers " + i + ", " + j);
+									return true;
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 
 		return false;
 	}
-
 }
