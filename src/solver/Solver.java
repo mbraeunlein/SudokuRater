@@ -8,6 +8,7 @@ public class Solver {
 
 	private Sudoku sudoku;
 	private int count;
+	private boolean changed = true;
 
 	public Solver(Sudoku sudoku) {
 		try {
@@ -25,6 +26,11 @@ public class Solver {
 	}
 
 	public Sudoku step() {
+		if (sudoku.numberCount() == 81) {
+			changed = false;
+			return sudoku;
+		}
+
 		try {
 			updateConstraints();
 
@@ -32,6 +38,7 @@ public class Solver {
 			case 0:
 				if (nakedSingles()) {
 					count = 0;
+					changed = true;
 					break;
 				} else {
 					System.out.println("no naked single found");
@@ -41,6 +48,7 @@ public class Solver {
 			case 1:
 				if (hiddenSingles()) {
 					count = 0;
+					changed = true;
 					break;
 				} else {
 					System.out.println("no hidden single found");
@@ -50,46 +58,62 @@ public class Solver {
 			case 2:
 				if (nakedTupel()) {
 					count = 0;
+					changed = true;
 					break;
 				} else {
 					System.out.println("no naked tupel found");
 					count++;
 					break;
 				}
-			/*case 3:
+
+			case 3:
 				if (hiddenTupel()) {
 					count = 0;
+					changed = true;
 					break;
 				} else {
 					System.out.println("no hidden tupel found");
 					count++;
 					break;
-				}*/
-			case 3:
+				}
+
+			case 4:
 				if (nakedTripel()) {
 					count = 0;
+					changed = true;
 					break;
 				} else {
 					System.out.println("no naked tripel found");
 					count++;
 					break;
 				}
-			case 4:
+			case 5:
 				if (crossing()) {
 					count = 0;
+					changed = true;
 					break;
 				} else {
 					System.out.println("no crossing found");
 					count++;
 					break;
 				}
-			case 5:
+			case 6:
 				System.out.println("not solvable");
+				changed = false;
 				return sudoku;
 			}
 		} catch (Exception ex) {
 
 		}
+		return sudoku;
+	}
+
+	public Sudoku solve() {
+		backtracking();
+
+//		while (changed) {
+//			step();
+//		}
 		return sudoku;
 	}
 
@@ -505,7 +529,7 @@ public class Solver {
 						}
 					}
 					if (posCount > 0) {
-						System.out.println("block - col - crossingüü block "
+						System.out.println("block - col - crossing block "
 								+ blockNumber + " col " + col + " number "
 								+ number + " removed " + posCount
 								+ " possibilities");
@@ -646,8 +670,8 @@ public class Solver {
 					if (field.posibilities.size() == 1) {
 						int number = field.posibilities.get(0);
 						sudoku.setField(row, column, new Field(number));
-						System.out.println("exclude possibilities: " + row
-								+ " / " + column + " -> " + number);
+						System.out.println("naked single: " + row + " / "
+								+ column + " -> " + number);
 						return true;
 					}
 			}
@@ -1157,29 +1181,40 @@ public class Solver {
 							if (positions1.get(0) == positions2.get(0)
 									&& positions1.get(1) == positions2.get(1)) {
 								// hidden tupel found
-								
-								Field newField = new Field();
-								newField.number = 0;
-								newField.posibilities.add(i);
-								newField.posibilities.add(j);
 
-								sudoku.setField(f, positions1.get(0), newField);
-								sudoku.setField(f, positions1.get(1), newField);
+								Field newField1 = new Field();
+								newField1.number = 0;
+								newField1.posibilities.add(i);
+								newField1.posibilities.add(j);
+
+								Field newField2 = new Field();
+								newField2.number = 0;
+								newField2.posibilities.add(i);
+								newField2.posibilities.add(j);
 
 								if (sudoku.getField(f, positions1.get(0)).posibilities
-										.size() > 2) {
-									System.out
-											.println("hidden tupel row "
-													+ f
-													+ " numbers "
-													+ i
-													+ ", "
-													+ j
-													+ " removed "
-													+ sudoku.getField(f,
-															positions1.get(0)).posibilities
-															.size()
-													+ " possibilities");
+										.size() > newField1.posibilities.size()
+										|| sudoku
+												.getField(f, positions1.get(1)).posibilities
+												.size() > newField1.posibilities
+												.size()) {
+									int posCount = sudoku.getField(f,
+											positions1.get(0)).posibilities
+											.size()
+											- newField1.posibilities.size();
+									posCount += sudoku.getField(f,
+											positions1.get(1)).posibilities
+											.size()
+											- newField1.posibilities.size();
+									System.out.println("hidden tupel at row "
+											+ f + " positions "
+											+ positions1.get(0) + ", "
+											+ positions1.get(1) + " removed "
+											+ posCount + " possibilities");
+									sudoku.setField(f, positions1.get(0),
+											newField1);
+									sudoku.setField(f, positions1.get(1),
+											newField2);
 									return true;
 								}
 							}
@@ -1199,31 +1234,40 @@ public class Solver {
 							if (positions1.get(0) == positions2.get(0)
 									&& positions1.get(1) == positions2.get(1)) {
 								// hidden tupel found, remove it from the row
-								int posCount = 0;
-								for (int pos = 0; pos < 9; pos++) {
-									if (pos != positions1.get(0)
-											&& pos != positions1.get(1)) {
-										if (sudoku.getField(pos, f).posibilities
-												.contains(i)) {
-											System.out.println("removing row "
-													+ pos + " col " + f + " - "
-													+ i);
-											sudoku.removePosibility(pos, f, i);
-											posCount++;
-										}
-										if (sudoku.getField(pos, f).posibilities
-												.contains(j)) {
-											System.out.println("removing row "
-													+ pos + " col " + f + " - "
-													+ j);
-											sudoku.removePosibility(pos, f, j);
-											posCount++;
-										}
-									}
-								}
-								if (posCount > 0) {
-									System.out.println("hidden tupel col " + f
-											+ " numbers " + i + ", " + j);
+
+								Field newField1 = new Field();
+								newField1.number = 0;
+								newField1.posibilities.add(i);
+								newField1.posibilities.add(j);
+
+								Field newField2 = new Field();
+								newField2.number = 0;
+								newField2.posibilities.add(i);
+								newField2.posibilities.add(j);
+
+								if (sudoku.getField(positions1.get(0), f).posibilities
+										.size() > newField1.posibilities.size()
+										|| sudoku
+												.getField(positions1.get(1), f).posibilities
+												.size() > newField1.posibilities
+												.size()) {
+									int posCount = sudoku.getField(
+											positions1.get(0), f).posibilities
+											.size()
+											- newField1.posibilities.size();
+									posCount += sudoku.getField(
+											positions1.get(1), f).posibilities
+											.size()
+											- newField1.posibilities.size();
+									System.out.println("hidden tupel at col "
+											+ f + " positions "
+											+ positions1.get(0) + ", "
+											+ positions1.get(1) + " removed "
+											+ posCount + " possibilities");
+									sudoku.setField(positions1.get(0), f,
+											newField1);
+									sudoku.setField(positions1.get(1), f,
+											newField2);
 									return true;
 								}
 							}
@@ -1245,36 +1289,38 @@ public class Solver {
 							if (positions1.get(0) == positions2.get(0)
 									&& positions1.get(1) == positions2.get(1)) {
 								// hidden tupel found, remove it from the row
-								int posCount = 0;
-								for (int pos = 0; pos < 9; pos++) {
-									if (pos != positions1.get(0)
-											&& pos != positions1.get(1)) {
-										Field[] block = sudoku.get(
-												Figure.Block, f);
-										if (block[pos].posibilities.contains(i)) {
-											System.out
-													.println("removing block "
-															+ f + " position "
-															+ pos + " - " + i);
-											sudoku.removePossibilityInBlock(f,
-													pos, i);
-											posCount++;
-										}
-										if (sudoku.getField(f, pos).posibilities
-												.contains(j)) {
-											System.out
-													.println("removing block "
-															+ f + " position "
-															+ pos + " - " + j);
-											sudoku.removePossibilityInBlock(f,
-													pos, j);
-											posCount++;
-										}
-									}
-								}
-								if (posCount > 0) {
-									System.out.println("hidden tupel block "
-											+ f + " numbers " + i + ", " + j);
+								Field newField1 = new Field();
+								newField1.number = 0;
+								newField1.posibilities.add(i);
+								newField1.posibilities.add(j);
+
+								Field newField2 = new Field();
+								newField2.number = 0;
+								newField2.posibilities.add(i);
+								newField2.posibilities.add(j);
+
+								Field[] block = sudoku.get(Figure.Block, f);
+								if (block[positions1.get(0)].posibilities
+										.size() > newField1.posibilities.size()
+										|| block[positions1.get(1)].posibilities
+												.size() > newField1.posibilities
+												.size()) {
+									int posCount = block[positions1.get(0)].posibilities
+											.size()
+											- newField1.posibilities.size();
+									posCount += block[positions1.get(1)].posibilities
+											.size()
+											- newField1.posibilities.size();
+									System.out.println("hidden tupel at block "
+											+ f + " positions "
+											+ positions1.get(0) + ", "
+											+ positions1.get(1) + " numbers "
+											+ i + ", " + j + " removed "
+											+ posCount + " possibilities");
+									sudoku.setFieldInBlock(f,
+											positions1.get(0), newField1);
+									sudoku.setFieldInBlock(f,
+											positions1.get(1), newField2);
 									return true;
 								}
 							}
@@ -1284,6 +1330,35 @@ public class Solver {
 			}
 		}
 
+		return false;
+	}
+
+	private boolean backtracking() {
+		if (sudoku.numberCount() == 81)
+			return true;
+		try {
+			updateConstraints();
+		} catch (Exception e) {
+			return false;
+		}
+
+		for (int row = 0; row < 9; row++) {
+			for (int column = 0; column < 9; column++) {
+				// the first free field
+				Field free = sudoku.getField(row, column);
+				if (free.number == 0) {
+					// try all possibilities
+					for (int pos = 0; pos < free.posibilities.size(); pos++) {
+						Field modified = new Field(free.posibilities.get(pos));
+						sudoku.setField(row, column, modified);
+						if (backtracking()) {
+							return true;
+						}
+					}
+					return false;
+				}
+			}
+		}
 		return false;
 	}
 }

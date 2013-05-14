@@ -2563,6 +2563,7 @@ public class MainWindow extends javax.swing.JFrame {
 	private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {
 		// TODO add your handling code here:
 		System.out.println("Solving the sudoku...");
+		drawSudoku(solver.solve());
 	}
 
 	private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {

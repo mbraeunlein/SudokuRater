@@ -15,7 +15,7 @@ public class Main {
 		SudokuReader sr = new SudokuReader(new File("sudokus.txt"));
 
 		ArrayList<Sudoku> sudokus = sr.read();
-		Sudoku sudoku = sudokus.get(2);
+		Sudoku sudoku = sudokus.get(4);
 		Solver solver = new Solver(sudoku);
 		System.out.println(sudoku);
 		mw.setSolver(solver);
