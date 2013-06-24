@@ -1,3 +1,4 @@
+import io.Crawler;
 import io.SudokuReader;
 
 import java.util.*;
@@ -9,15 +10,34 @@ import ui.*;
 
 public class Main {
 	public static void main(String args[]) throws Exception {
-		MainWindow mw = new MainWindow();
-		mw.draw();
+		// draw the main window
 		
-		SudokuReader sr = new SudokuReader(new File("sudokus.txt"));
+		 MainWindow mw = new MainWindow(); mw.draw();
+		 
 
-		ArrayList<Sudoku> sudokus = sr.read();
-		Sudoku sudoku = sudokus.get(4);
-		Solver solver = new Solver(sudoku);
-		System.out.println(sudoku);
-		mw.setSolver(solver);
+		// crawl sudokus from webpage
+		// Crawler crawler = new Crawler();
+
+		// read sudokus from textfile
+		SudokuReader sr = new SudokuReader(new File("einfach.txt"));
+		ArrayList<Sudoku> sudokus = sr.readFromSoEinDing();
+		for (int i = 0; i < sudokus.size(); i++) {
+			Sudoku sudoku = sudokus.get(i);
+			Solver solver = new Solver(sudoku);
+			mw.setSolver(solver);
+			
+			for(int j = 0; j < 10; j++) {
+				System.out.println(j + ": " + sudoku.numberCount(j));
+			}
+			
+			sudoku = solver.solve();
+			
+			
+			FeatureVector fv = solver.getFeatureVector();
+			System.out.println("Sudoku " + i
+					+ "\n----------------------------\n");
+			System.out.println(fv.toString());
+		}
+
 	}
 }

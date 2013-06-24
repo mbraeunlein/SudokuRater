@@ -2,7 +2,7 @@ package model;
 
 import java.util.*;
 
-public class Sudoku implements Cloneable{
+public class Sudoku implements Cloneable {
 	// Erst Reihe dann Spalte
 	private Field[][] board = new Field[9][9];
 
@@ -30,7 +30,7 @@ public class Sudoku implements Cloneable{
 			System.out.println("Error while parsing Sudoku." + e.getMessage());
 		}
 	}
-	
+
 	public String toString() {
 		String s = "";
 		for (int i = 0; i < 9; i++) {
@@ -165,23 +165,35 @@ public class Sudoku implements Cloneable{
 	}
 
 	// the number of possible numbers to insert
-	public int possibilityCount() {
+	public int possibilityCount(int number) {
 		int count = 0;
 		for (int i = 0; i < 9; i++) {
 			for (int j = 0; j < 9; j++) {
-				count += board[i][j].posibilities.size();
+				if(number == 0) {
+					count += board[i][j].posibilities.size();
+				}
+				else {
+					if(board[i][j].posibilities.contains(number))
+						count++;
+				}
+					
 			}
 		}
 		return count;
 	}
 
 	// the number of filled fields
-	public int numberCount() {
+	public int numberCount(int number) {
 		int count = 0;
 		for (int i = 0; i < 9; i++) {
 			for (int j = 0; j < 9; j++) {
-				if (board[i][j].number != 0)
-					count += 1;
+				if (number == 0) {
+					if(board[i][j].number == 0)
+						count++;
+				} else {
+					if (board[i][j].number == number)
+						count ++;
+				}
 			}
 		}
 		return count;
@@ -278,8 +290,8 @@ public class Sudoku implements Cloneable{
 					if (field.posibilities.size() == this.getField(row, col).posibilities
 							.size()) {
 						for (int pos = 0; pos < field.posibilities.size(); pos++) {
-							if (field.posibilities.get(pos) != this.getField(row,
-									col).posibilities.get(pos))
+							if (field.posibilities.get(pos) != this.getField(
+									row, col).posibilities.get(pos))
 								return false;
 						}
 					} else {
