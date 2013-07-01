@@ -7,12 +7,10 @@ import model.*;
 
 public class SudokuReader {
 	private BufferedReader br = null;
-	private File f;
 
-	public SudokuReader(File file) {
+	public SudokuReader(String file) {
 		try {
-			br = new BufferedReader(new FileReader(file));
-			f = file;
+			br = new BufferedReader(new FileReader(new File("sudokus\\" + file)));
 		} catch (FileNotFoundException e) {
 			System.out.println("the given file was not found");
 		}

@@ -2569,7 +2569,6 @@ public class MainWindow extends javax.swing.JFrame {
 	private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {
 		// TODO add your handling code here:
 		if (solver != null) {
-			System.out.println("Performing one step...");
 			drawSudoku(solver.step());
 		} else {
 			System.out.println("no solver set");

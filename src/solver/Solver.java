@@ -1,5 +1,8 @@
 package solver;
 
+import io.LogLevel;
+import io.Logger;
+
 import java.util.*;
 
 import model.*;
@@ -15,16 +18,15 @@ public class Solver {
 		try {
 			this.sudoku = sudoku;
 			updateConstraints();
-			
-			for(int i = 1; i < 10; i++) {
+
+			for (int i = 1; i < 10; i++) {
 				fv.addNumberCount(i, sudoku.numberCount(i));
 			}
-			
-			for(int i = 1; i < 10; i++) {
+
+			for (int i = 1; i < 10; i++) {
 				fv.addPossibilityCount(i, sudoku.possibilityCount(i));
-				System.out.println(sudoku.possibilityCount(i));
 			}
-			
+
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -35,13 +37,13 @@ public class Solver {
 	public Sudoku getSudoku() {
 		return sudoku;
 	}
-	
+
 	public FeatureVector getFeatureVector() {
 		return fv;
 	}
 
 	public Sudoku step() {
-		if (sudoku.numberCount(0) == 81) {
+		if (sudoku.numberCount(0) == 0) {
 			changed = false;
 			return sudoku;
 		}
@@ -56,7 +58,8 @@ public class Solver {
 					changed = true;
 					break;
 				} else {
-					System.out.println("no naked single found");
+					Logger.log(LogLevel.SolvingMethods,
+							"no naked single found");
 					count++;
 					break;
 				}
@@ -66,7 +69,8 @@ public class Solver {
 					changed = true;
 					break;
 				} else {
-					System.out.println("no hidden single found");
+					Logger.log(LogLevel.SolvingMethods,
+							"no hidden single found");
 					count++;
 					break;
 				}
@@ -76,7 +80,7 @@ public class Solver {
 					changed = true;
 					break;
 				} else {
-					System.out.println("no naked tupel found");
+					Logger.log(LogLevel.SolvingMethods, "no naked tupel found");
 					count++;
 					break;
 				}
@@ -87,7 +91,7 @@ public class Solver {
 					changed = true;
 					break;
 				} else {
-					System.out.println("no hidden tupel found");
+					Logger.log(LogLevel.SolvingMethods, "no hidden tupel found");
 					count++;
 					break;
 				}
@@ -98,7 +102,7 @@ public class Solver {
 					changed = true;
 					break;
 				} else {
-					System.out.println("no naked tripel found");
+					Logger.log(LogLevel.SolvingMethods, "no naked tripel found");
 					count++;
 					break;
 				}
@@ -108,7 +112,7 @@ public class Solver {
 					changed = true;
 					break;
 				} else {
-					System.out.println("no naked tripel found");
+					Logger.log(LogLevel.SolvingMethods, "no naked tripel found");
 					count++;
 					break;
 				}
@@ -118,13 +122,41 @@ public class Solver {
 					changed = true;
 					break;
 				} else {
-					System.out.println("no crossing found");
+					Logger.log(LogLevel.SolvingMethods, "no crossing found");
 					count++;
 					break;
 				}
 			case 7:
+				if (grid()) {
+					count = 0;
+					changed = true;
+					break;
+				} else {
+					Logger.log(LogLevel.SolvingMethods, "no grid found");
+					count++;
+					break;
+				}
+			case 8:
+				if (xyWing()) {
+					count = 0;
+					changed = true;
+					break;
+				} else {
+					Logger.log(LogLevel.SolvingMethods, "no xyWing found");
+					count++;
+					break;
+				}
+			case 9:
 				changed = false;
-				System.out.println("not solvable");
+
+				// compute how many numbers would have to be computed by
+				// backtracking
+				for (int i = 1; i < 10; i++) {
+					fv.addMethod(Method.Backtracking, i,
+							9 - sudoku.numberCount(i));
+				}
+
+				Logger.log(LogLevel.Debug, "not solvable");
 				return sudoku;
 			}
 		} catch (Exception ex) {
@@ -194,7 +226,6 @@ public class Solver {
 		return positionList;
 	}
 
-	// computes the disjunction (or) of two lists
 	private ArrayList<Integer> disjunction(ArrayList<Integer> l1,
 			ArrayList<Integer> l2) {
 
@@ -212,6 +243,20 @@ public class Solver {
 		return newList;
 	}
 
+	public ArrayList<Vector<Integer>> conjunction(
+			ArrayList<Vector<Integer>> l1, ArrayList<Vector<Integer>> l2) {
+		ArrayList<Vector<Integer>> conj = new ArrayList<Vector<Integer>>();
+
+		if (l1 == null || l1.size() == 0 || l2 == null || l2.size() == 0)
+			return conj;
+		for (int i = 0; i < l1.size(); i++) {
+			if (l2.contains(l1.get(i)))
+				conj.add(l1.get(i));
+		}
+
+		return conj;
+	}
+
 	private boolean nakedSingles() throws Exception {
 
 		for (int row = 0; row < 9; row++) {
@@ -221,8 +266,9 @@ public class Solver {
 					if (field.posibilities.size() == 1) {
 						int number = field.posibilities.get(0);
 						sudoku.setField(row, column, new Field(number));
-						System.out.println("naked single row " + row
-								+ " column " + column + " number " + number);
+						Logger.log(LogLevel.SolvingMethods, "naked single row "
+								+ row + " column " + column + " number "
+								+ number);
 						fv.addMethod(Method.NakedSingles, number);
 						return true;
 					}
@@ -247,9 +293,10 @@ public class Solver {
 				if (rowPositionList.containsKey(number)) {
 					ArrayList<Integer> positions = rowPositionList.get(number);
 					if (positions.size() == 1) {
-						System.out.println("hidden single  row " + f
-								+ " column " + positions.get(0) + " number "
-								+ number);
+						Logger.log(LogLevel.SolvingMethods,
+								"hidden single  row " + f + " column "
+										+ positions.get(0) + " number "
+										+ number);
 						sudoku.setField(f, positions.get(0), new Field(number));
 						fv.addMethod(Method.HiddenSingles, number);
 						return true;
@@ -258,9 +305,9 @@ public class Solver {
 				if (colPositionList.containsKey(number)) {
 					ArrayList<Integer> positions = colPositionList.get(number);
 					if (positions.size() == 1) {
-						System.out.println("hidden single row "
-								+ positions.get(0) + " column " + f
-								+ " number " + number);
+						Logger.log(LogLevel.SolvingMethods,
+								"hidden single row " + positions.get(0)
+										+ " column " + f + " number " + number);
 						sudoku.setField(positions.get(0), f, new Field(number));
 						fv.addMethod(Method.HiddenSingles, number);
 						return true;
@@ -270,9 +317,10 @@ public class Solver {
 					ArrayList<Integer> positions = blockPositionList
 							.get(number);
 					if (positions.size() == 1) {
-						System.out.println("hidden single block " + f
-								+ " position " + positions.get(0) + " number "
-								+ number);
+						Logger.log(LogLevel.SolvingMethods,
+								"hidden single block " + f + " position "
+										+ positions.get(0) + " number "
+										+ number);
 						sudoku.setFieldInBlock(f, positions.get(0), new Field(
 								number));
 						fv.addMethod(Method.HiddenSingles, number);
@@ -316,7 +364,8 @@ public class Solver {
 												.get(number))) {
 											sudoku.removePosibility(f, pos,
 													disj.get(number));
-											fv.addMethod(Method.NakedTupel, number);
+											fv.addMethod(Method.NakedTupel,
+													number);
 											posCount++;
 										}
 									}
@@ -324,10 +373,10 @@ public class Solver {
 							}
 
 							if (posCount > 0) {
-								System.out.println("naked tupel row " + f
-										+ " positions " + i + ", " + j
-										+ " removed " + posCount
-										+ " possibilities");
+								Logger.log(LogLevel.SolvingMethods,
+										"naked tupel row " + f + " positions "
+												+ i + ", " + j + " removed "
+												+ posCount + " possibilities");
 								return true;
 							}
 						}
@@ -346,7 +395,8 @@ public class Solver {
 												.get(number))) {
 											sudoku.removePosibility(pos, f,
 													disj.get(number));
-											fv.addMethod(Method.NakedTupel, number);
+											fv.addMethod(Method.NakedTupel,
+													number);
 											posCount++;
 										}
 									}
@@ -354,10 +404,10 @@ public class Solver {
 							}
 
 							if (posCount > 0) {
-								System.out.println("naked tupel col " + f
-										+ " positions " + i + ", " + j
-										+ " removed " + posCount
-										+ " possibilities");
+								Logger.log(LogLevel.SolvingMethods,
+										"naked tupel col " + f + " positions "
+												+ i + ", " + j + " removed "
+												+ posCount + " possibilities");
 								return true;
 							}
 						}
@@ -377,7 +427,8 @@ public class Solver {
 												.contains(disj.get(number))) {
 											sudoku.removePossibilityInBlock(f,
 													pos, disj.get(number));
-											fv.addMethod(Method.NakedTupel, number);
+											fv.addMethod(Method.NakedTupel,
+													number);
 											posCount++;
 										}
 									}
@@ -385,10 +436,11 @@ public class Solver {
 							}
 
 							if (posCount > 0) {
-								System.out.println("naked tupel block " + f
-										+ " positions " + i + ", " + j
-										+ " removed " + posCount
-										+ " possibilities");
+								Logger.log(LogLevel.SolvingMethods,
+										"naked tupel block " + f
+												+ " positions " + i + ", " + j
+												+ " removed " + posCount
+												+ " possibilities");
 								return true;
 							}
 						}
@@ -451,10 +503,10 @@ public class Solver {
 							}
 
 							if (posCount > 0) {
-								System.out.println("hidden tupel row " + f
-										+ " numbers " + i + ", " + j
-										+ " removed " + posCount
-										+ " possibilities");
+								Logger.log(LogLevel.SolvingMethods,
+										"hidden tupel row " + f + " numbers "
+												+ i + ", " + j + " removed "
+												+ posCount + " possibilities");
 								return true;
 							}
 						}
@@ -487,10 +539,11 @@ public class Solver {
 							}
 
 							if (posCount > 0) {
-								System.out.println("hidden tupel column " + f
-										+ " numbers " + i + ", " + j
-										+ " removed " + posCount
-										+ " possibilities");
+								Logger.log(LogLevel.SolvingMethods,
+										"hidden tupel column " + f
+												+ " numbers " + i + ", " + j
+												+ " removed " + posCount
+												+ " possibilities");
 								return true;
 							}
 						}
@@ -524,10 +577,10 @@ public class Solver {
 							}
 
 							if (posCount > 0) {
-								System.out.println("hidden tupel block " + f
-										+ " numbers " + i + ", " + j
-										+ " removed " + posCount
-										+ " possibilities");
+								Logger.log(LogLevel.SolvingMethods,
+										"hidden tupel block " + f + " numbers "
+												+ i + ", " + j + " removed "
+												+ posCount + " possibilities");
 								return true;
 							}
 						}
@@ -578,7 +631,9 @@ public class Solver {
 													.contains(disj.get(number))) {
 												sudoku.removePosibility(f, pos,
 														disj.get(number));
-												fv.addMethod(Method.NakedTripel, number);
+												fv.addMethod(
+														Method.NakedTripel,
+														number);
 												posCount++;
 											}
 										}
@@ -586,10 +641,12 @@ public class Solver {
 								}
 
 								if (posCount > 0) {
-									System.out.println("naked tripel row " + f
-											+ " positions " + i + ", " + j
-											+ ", " + k + " removed " + posCount
-											+ " possibilities");
+									Logger.log(LogLevel.SolvingMethods,
+											"naked tripel row " + f
+													+ " positions " + i + ", "
+													+ j + ", " + k
+													+ " removed " + posCount
+													+ " possibilities");
 									return true;
 								}
 							}
@@ -610,7 +667,9 @@ public class Solver {
 													.contains(disj.get(number))) {
 												sudoku.removePosibility(pos, f,
 														disj.get(number));
-												fv.addMethod(Method.NakedTripel, number);
+												fv.addMethod(
+														Method.NakedTripel,
+														number);
 												posCount++;
 											}
 										}
@@ -618,10 +677,12 @@ public class Solver {
 								}
 
 								if (posCount > 0) {
-									System.out.println("naked tripel column "
-											+ f + " positions " + i + ", " + j
-											+ ", " + k + " removed " + posCount
-											+ " possibilities");
+									Logger.log(LogLevel.SolvingMethods,
+											"naked tripel column " + f
+													+ " positions " + i + ", "
+													+ j + ", " + k
+													+ " removed " + posCount
+													+ " possibilities");
 									return true;
 								}
 							}
@@ -643,7 +704,9 @@ public class Solver {
 												sudoku.removePossibilityInBlock(
 														f, pos,
 														disj.get(number));
-												fv.addMethod(Method.NakedTripel, number);
+												fv.addMethod(
+														Method.NakedTripel,
+														number);
 												posCount++;
 											}
 										}
@@ -651,10 +714,12 @@ public class Solver {
 								}
 
 								if (posCount > 0) {
-									System.out.println("naked tripel block "
-											+ f + " positions " + i + ", " + j
-											+ ", " + k + " removed " + posCount
-											+ " possibilities");
+									Logger.log(LogLevel.SolvingMethods,
+											"naked tripel block " + f
+													+ " positions " + i + ", "
+													+ j + ", " + k
+													+ " removed " + posCount
+													+ " possibilities");
 									return true;
 								}
 							}
@@ -711,22 +776,26 @@ public class Solver {
 													.contains(number)) {
 												sudoku.removePosibility(f,
 														disj.get(pos), number);
-												fv.addMethod(Method.HiddenTripel, number);
+												fv.addMethod(
+														Method.HiddenTripel,
+														number);
 												posCount++;
 											}
 										}
 									}
 								}
 								if (posCount > 0) {
-									System.out.println("hidden tripel row "
-											+ f + " numbers " + i + ", " + j
-											+ ", " + k + " removed " + posCount
-											+ " possibilities");
+									Logger.log(LogLevel.SolvingMethods,
+											"hidden tripel row " + f
+													+ " numbers " + i + ", "
+													+ j + ", " + k
+													+ " removed " + posCount
+													+ " possibilities");
 									return true;
 								}
 							}
 						}
-						
+
 						if (colNumber1 != null && colNumber2 != null
 								&& colNumber3 != null) {
 							ArrayList<Integer> disj = disjunction(colNumber1,
@@ -742,24 +811,29 @@ public class Solver {
 											if (sudoku.getField(disj.get(pos),
 													f).posibilities
 													.contains(number)) {
-												sudoku.removePosibility(disj.get(pos),
-														f, number);
-												fv.addMethod(Method.HiddenTripel, number);
+												sudoku.removePosibility(
+														disj.get(pos), f,
+														number);
+												fv.addMethod(
+														Method.HiddenTripel,
+														number);
 												posCount++;
 											}
 										}
 									}
 								}
 								if (posCount > 0) {
-									System.out.println("hidden tripel column "
-											+ f + " numbers " + i + ", " + j
-											+ ", " + k + " removed " + posCount
-											+ " possibilities");
+									Logger.log(LogLevel.SolvingMethods,
+											"hidden tripel column " + f
+													+ " numbers " + i + ", "
+													+ j + ", " + k
+													+ " removed " + posCount
+													+ " possibilities");
 									return true;
 								}
 							}
 						}
-						
+
 						if (blockNumber1 != null && blockNumber2 != null
 								&& blockNumber3 != null) {
 							ArrayList<Integer> disj = disjunction(blockNumber1,
@@ -772,21 +846,27 @@ public class Solver {
 									if (number != i && number != j
 											&& number != k) {
 										for (int pos = 0; pos < 3; pos++) {
-											if (sudoku.get(Figure.Block, f)[disj.get(pos)].posibilities
+											if (sudoku.get(Figure.Block, f)[disj
+													.get(pos)].posibilities
 													.contains(number)) {
-												sudoku.removePossibilityInBlock(f,
-														disj.get(pos), number);
-												fv.addMethod(Method.HiddenTripel, number);
+												sudoku.removePossibilityInBlock(
+														f, disj.get(pos),
+														number);
+												fv.addMethod(
+														Method.HiddenTripel,
+														number);
 												posCount++;
 											}
 										}
 									}
 								}
 								if (posCount > 0) {
-									System.out.println("hidden tripel block "
-											+ f + " numbers " + i + ", " + j
-											+ ", " + k + " removed " + posCount
-											+ " possibilities");
+									Logger.log(LogLevel.SolvingMethods,
+											"hidden tripel block " + f
+													+ " numbers " + i + ", "
+													+ j + ", " + k
+													+ " removed " + posCount
+													+ " possibilities");
 									return true;
 								}
 							}
@@ -854,8 +934,8 @@ public class Solver {
 						}
 					}
 					if (posCount > 0) {
-						System.out.println("crossing row " + r + " block "
-								+ blockNumber + " number " + number
+						Logger.log(LogLevel.SolvingMethods, "crossing row " + r
+								+ " block " + blockNumber + " number " + number
 								+ " removed " + posCount + " possibilities");
 						return true;
 					}
@@ -879,8 +959,8 @@ public class Solver {
 						}
 					}
 					if (posCount > 0) {
-						System.out.println("crossing row " + r + " block "
-								+ blockNumber + " number " + number
+						Logger.log(LogLevel.SolvingMethods, "crossing row " + r
+								+ " block " + blockNumber + " number " + number
 								+ " removed " + posCount + " possibilities");
 						return true;
 					}
@@ -904,8 +984,8 @@ public class Solver {
 						}
 					}
 					if (posCount > 0) {
-						System.out.println("crossing row " + r + " block "
-								+ blockNumber + " number " + number
+						Logger.log(LogLevel.SolvingMethods, "crossing row " + r
+								+ " block " + blockNumber + " number " + number
 								+ " removed " + posCount + " possibilities");
 						return true;
 					}
@@ -966,9 +1046,10 @@ public class Solver {
 						}
 					}
 					if (posCount > 0) {
-						System.out.println("crossing column " + c + " block "
-								+ blockNumber + " number " + number
-								+ " removed " + posCount + " possibilities");
+						Logger.log(LogLevel.SolvingMethods, "crossing column "
+								+ c + " block " + blockNumber + " number "
+								+ number + " removed " + posCount
+								+ " possibilities");
 						return true;
 					}
 				}
@@ -991,9 +1072,10 @@ public class Solver {
 						}
 					}
 					if (posCount > 0) {
-						System.out.println("crossing column " + c + " block "
-								+ blockNumber + " number " + number
-								+ " removed " + posCount + " possibilities");
+						Logger.log(LogLevel.SolvingMethods, "crossing column "
+								+ c + " block " + blockNumber + " number "
+								+ number + " removed " + posCount
+								+ " possibilities");
 						return true;
 					}
 				}
@@ -1016,9 +1098,10 @@ public class Solver {
 						}
 					}
 					if (posCount > 0) {
-						System.out.println("crossing column " + c + " block "
-								+ blockNumber + " number " + number
-								+ " removed " + posCount + " possibilities");
+						Logger.log(LogLevel.SolvingMethods, "crossing column "
+								+ c + " block " + blockNumber + " number "
+								+ number + " removed " + posCount
+								+ " possibilities");
 						return true;
 					}
 				}
@@ -1080,9 +1163,9 @@ public class Solver {
 						}
 					}
 					if (posCount > 0) {
-						System.out.println("crossing block " + b + " row "
-								+ rowNumber + " number " + number + " removed "
-								+ posCount + " possibilities");
+						Logger.log(LogLevel.SolvingMethods, "crossing block "
+								+ b + " row " + rowNumber + " number " + number
+								+ " removed " + posCount + " possibilities");
 						return true;
 					}
 				}
@@ -1105,9 +1188,9 @@ public class Solver {
 						}
 					}
 					if (posCount > 0) {
-						System.out.println("crossing block " + b + " row "
-								+ rowNumber + " number " + number + " removed "
-								+ posCount + " possibilities");
+						Logger.log(LogLevel.SolvingMethods, "crossing block "
+								+ b + " row " + rowNumber + " number " + number
+								+ " removed " + posCount + " possibilities");
 						return true;
 					}
 				}
@@ -1130,9 +1213,9 @@ public class Solver {
 						}
 					}
 					if (posCount > 0) {
-						System.out.println("crossing block " + b + " row "
-								+ rowNumber + " number " + number + " removed "
-								+ posCount + " possibilities");
+						Logger.log(LogLevel.SolvingMethods, "crossing block "
+								+ b + " row " + rowNumber + " number " + number
+								+ " removed " + posCount + " possibilities");
 						return true;
 					}
 				}
@@ -1187,9 +1270,10 @@ public class Solver {
 						}
 					}
 					if (posCount > 0) {
-						System.out.println("crossing block " + b + " column "
-								+ colNumber + " number " + number + " removed "
-								+ posCount + " possibilities");
+						Logger.log(LogLevel.SolvingMethods, "crossing block "
+								+ b + " column " + colNumber + " number "
+								+ number + " removed " + posCount
+								+ " possibilities");
 						return true;
 					}
 				}
@@ -1210,9 +1294,10 @@ public class Solver {
 						}
 					}
 					if (posCount > 0) {
-						System.out.println("crossing block " + b + " column "
-								+ colNumber + " number " + number + " removed "
-								+ posCount + " possibilities");
+						Logger.log(LogLevel.SolvingMethods, "crossing block "
+								+ b + " column " + colNumber + " number "
+								+ number + " removed " + posCount
+								+ " possibilities");
 						return true;
 					}
 				}
@@ -1233,15 +1318,383 @@ public class Solver {
 						}
 					}
 					if (posCount > 0) {
-						System.out.println("crossing block " + b + " column "
-								+ colNumber + " number " + number + " removed "
-								+ posCount + " possibilities");
+						Logger.log(LogLevel.SolvingMethods, "crossing block "
+								+ b + " column " + colNumber + " number "
+								+ number + " removed " + posCount
+								+ " possibilities");
 						return true;
 					}
 				}
 			}
 		}
 		return false;
+	}
+
+	public boolean grid() throws Exception {
+		// iterate over every number
+		for (int number = 1; number < 10; number++) {
+			// compare 2 rows / columns
+			for (int f1 = 0; f1 < 9; f1++) {
+				for (int f2 = f1 + 1; f2 < 9; f2++) {
+					// Rows
+					ArrayList<Integer> positions1 = getPositionList(Figure.Row,
+							f1).get(number);
+					ArrayList<Integer> positions2 = getPositionList(Figure.Row,
+							f2).get(number);
+
+					if (positions1 != null && positions2 != null
+							&& positions1.size() == 2 && positions2.size() == 2) {
+						ArrayList<Integer> disj = disjunction(positions1,
+								positions2);
+
+						if (disj.size() == 2) {
+							int posCount = 0;
+
+							// grid found, delete possibilities from the colums
+							// where the grid was found
+							for (int pos = 0; pos < 9; pos++) {
+								if (pos != f1 && pos != f2) {
+									if (sudoku.getField(pos, disj.get(0)).posibilities
+											.contains(number)) {
+										posCount++;
+										sudoku.removePosibility(pos,
+												disj.get(0), number);
+										fv.addMethod(Method.Grid, number);
+									}
+									if (sudoku.getField(pos, disj.get(1)).posibilities
+											.contains(number)) {
+										posCount++;
+										sudoku.removePosibility(pos,
+												disj.get(1), number);
+										fv.addMethod(Method.Grid, number);
+									}
+								}
+							}
+
+							if (posCount > 0) {
+								Logger.log(LogLevel.SolvingMethods,
+										"grid at rows " + f1 + ", " + f2
+												+ " number " + number
+												+ " positions " + disj.get(0)
+												+ ", " + disj.get(1)
+												+ " removed " + posCount
+												+ " possibilities");
+								return true;
+							}
+						}
+					}
+
+					// Columns
+					positions1 = getPositionList(Figure.Column, f1).get(number);
+					positions2 = getPositionList(Figure.Column, f2).get(number);
+
+					if (positions1 != null && positions2 != null
+							&& positions1.size() == 2 && positions2.size() == 2) {
+						ArrayList<Integer> disj = disjunction(positions1,
+								positions2);
+
+						if (disj.size() == 2) {
+							int posCount = 0;
+
+							// grid found, delete possibilities from the rows
+							// where the grid was found
+							for (int pos = 0; pos < 9; pos++) {
+								if (pos != f1 && pos != f2) {
+									if (sudoku.getField(disj.get(0), pos).posibilities
+											.contains(number)) {
+										posCount++;
+										sudoku.removePosibility(disj.get(0),
+												pos, number);
+										fv.addMethod(Method.Grid, number);
+									}
+									if (sudoku.getField(disj.get(1), pos).posibilities
+											.contains(number)) {
+										posCount++;
+										sudoku.removePosibility(disj.get(1),
+												pos, number);
+										fv.addMethod(Method.Grid, number);
+									}
+								}
+							}
+
+							if (posCount > 0) {
+								Logger.log(LogLevel.SolvingMethods,
+										"grid at columns " + f1 + ", " + f2
+												+ " number " + number
+												+ " positions " + disj.get(0)
+												+ ", " + disj.get(1)
+												+ " removed " + posCount
+												+ " possibilities");
+								return true;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	public boolean xyWing() throws Exception {
+		// iterate over all fields of the sudoku
+		for (int row = 0; row < 9; row++) {
+			for (int col = 0; col < 9; col++) {
+
+				// find a field with 2 possibilities
+				Field xy = sudoku.getField(row, col);
+				if (xy.number == 0 && xy.posibilities.size() == 2) {
+
+					// get a list of all buddie cells with 2 possibilities
+					ArrayList<Vector<Integer>> buddyList = getBuddies(row, col);
+
+					for (int i = 0; i < buddyList.size(); i++) {
+						if (sudoku.getField(buddyList.get(i).get(0), buddyList
+								.get(i).get(1)).posibilities.size() != 2)
+							buddyList.remove(i);
+					}
+
+					// pairwise compare all buddy cells for xy wing
+					for (int buddy1 = 0; buddy1 < buddyList.size(); buddy1++) {
+						for (int buddy2 = buddy1 + 1; buddy2 < buddyList.size(); buddy2++) {
+
+							Field yz = sudoku.getField(buddyList.get(buddy1)
+									.get(0), buddyList.get(buddy1).get(1));
+
+							if (yz.number == 0 && yz.posibilities.size() == 2) {
+								// check if one possibility in xy and yz is the
+								// same
+								if (disjunction(xy.posibilities,
+										yz.posibilities).size() == 3) {
+									// determine what has to be x y and z
+									int x = 0;
+									int y = 0;
+									int z = 0;
+
+									if (yz.posibilities
+											.contains(xy.posibilities.get(0))) {
+										x = xy.posibilities.get(1);
+										y = xy.posibilities.get(0);
+										z = yz.posibilities.get(0) != y ? yz.posibilities
+												.get(0) : yz.posibilities
+												.get(1);
+									}
+
+									if (yz.posibilities
+											.contains(xy.posibilities.get(1))) {
+										x = xy.posibilities.get(0);
+										y = xy.posibilities.get(1);
+										z = yz.posibilities.get(0) != y ? yz.posibilities
+												.get(0) : yz.posibilities
+												.get(1);
+									}
+
+									// get the second buddy
+									Field xz = sudoku.getField(
+											buddyList.get(buddy2).get(0),
+											buddyList.get(buddy2).get(1));
+
+									// if the second buddy has x and z as only possibilities, then we found an xy wing
+									if (xz.number == 0
+											&& xz.posibilities.size() == 2) {
+										if (xz.posibilities.contains(x)
+												&& xz.posibilities.contains(z)) {
+
+											// get a list of all buddies of the buddies
+											ArrayList<Vector<Integer>> buddy1buddys = getBuddies(
+													buddyList.get(buddy1)
+															.get(0), buddyList
+															.get(buddy1).get(1));
+											ArrayList<Vector<Integer>> buddy2buddys = getBuddies(
+													buddyList.get(buddy2)
+															.get(0), buddyList
+															.get(buddy2).get(1));
+											
+											// conjunct it to get the common buddies
+											ArrayList<Vector<Integer>> removeNumberFrom = conjunction(
+													buddy1buddys, buddy2buddys);
+
+											// remove themself and the xy field from the common buddy list
+											removeNumberFrom.remove(buddyList
+													.get(buddy1));
+											removeNumberFrom.remove(buddyList
+													.get(buddy2));
+											Vector<Integer> xyVec = new Vector<Integer>();
+											xyVec.add(row);
+											xyVec.add(col);
+											removeNumberFrom.remove(xyVec);
+
+											int posCount = 0;
+
+											// go through all common buddies and remove z if it is in there 
+											for (int i = 0; i < removeNumberFrom
+													.size(); i++) {
+												Field f = sudoku.getField(
+														removeNumberFrom.get(i)
+																.get(0),
+														removeNumberFrom.get(i)
+																.get(1));
+												if (sudoku.getField(
+														removeNumberFrom.get(i)
+																.get(0),
+														removeNumberFrom.get(i)
+																.get(1)).posibilities
+														.contains(z)) {
+													sudoku.removePosibility(
+															removeNumberFrom
+																	.get(i)
+																	.get(0),
+															removeNumberFrom
+																	.get(i)
+																	.get(1), z);
+													fv.addMethod(Method.xyWing,
+															z);
+													posCount++;
+												}
+											}
+
+											if (posCount > 0) {
+												Logger.log(
+														LogLevel.SolvingMethods,
+														"xyWing xy [ "
+																+ row
+																+ " / "
+																+ col
+																+ " ] yz [ "
+																+ buddyList
+																		.get(buddy1)
+																		.get(0)
+																+ " / "
+																+ buddyList
+																		.get(buddy1)
+																		.get(1)
+																+ " ] xz [ "
+																+ buddyList
+																		.get(buddy2)
+																		.get(0)
+																+ " / "
+																+ buddyList
+																		.get(buddy2)
+																		.get(1)
+																+ " ]" +  " removed " + posCount + " possibilities");
+												return true;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	private ArrayList<Vector<Integer>> getBuddies(int row, int column)
+			throws Exception {
+		ArrayList<Vector<Integer>> buddyList = new ArrayList<Vector<Integer>>();
+
+		// search the row, the column and the block
+		int blockNumber = sudoku.getContainingBlockNumber(row, column);
+		Field[] block = sudoku.get(Figure.Block, blockNumber);
+		for (int i = 0; i < 9; i++) {
+			if (i != column) {
+				Vector<Integer> v = new Vector<Integer>();
+				v.add(row);
+				v.add(i);
+				buddyList.add(v);
+			}
+
+			if (i != row) {
+				Vector<Integer> v = new Vector<Integer>();
+				v.add(i);
+				v.add(column);
+				buddyList.add(v);
+			}
+
+			// calculate x and y position of the block
+			int xBlockOffset = blockNumber % 3;
+			int yBlockOffset = 0;
+
+			if (blockNumber > 2)
+				yBlockOffset = 1;
+			if (blockNumber > 5)
+				yBlockOffset = 2;
+
+			// calculate x and y position in the block
+			int xInBlockOffset = i % 3;
+			int yInBlockOffset = 0;
+
+			if (i > 2)
+				yInBlockOffset = 1;
+			if (i > 5)
+				yInBlockOffset = 2;
+
+			int xOffset = 3 * xBlockOffset + xInBlockOffset;
+			int yOffset = 3 * yBlockOffset + yInBlockOffset;
+
+			if (yOffset != row || xOffset != column) {
+				Vector<Integer> v = new Vector<Integer>();
+				v.add(yOffset);
+				v.add(xOffset);
+				buddyList.add(v);
+
+			}
+
+		}
+
+		return buddyList;
+	}
+
+	public boolean solutionCheck() throws Exception {
+		if (sudoku.numberCount(0) != 0) {
+			Logger.log(LogLevel.Debug,
+					"solution check failed because there were empty fields in the sudoku");
+			return false;
+		}
+
+		for (int i = 0; i < 9; i++) {
+			HashMap<Integer, Integer> rowNumberCount = new HashMap<Integer, Integer>();
+			HashMap<Integer, Integer> colNumberCount = new HashMap<Integer, Integer>();
+			HashMap<Integer, Integer> blockNumberCount = new HashMap<Integer, Integer>();
+			Field[] row = sudoku.get(Figure.Row, i);
+			Field[] col = sudoku.get(Figure.Column, i);
+			Field[] block = sudoku.get(Figure.Block, i);
+
+			for (int j = 0; j < 9; j++) {
+				if (rowNumberCount.containsKey(row[j].number)) {
+					Logger.log(LogLevel.Error,
+							"solution check failed because number " + row[j]
+									+ " appeared twice in row " + i);
+					return false;
+				} else {
+					rowNumberCount.put(row[j].number, 1);
+				}
+
+				if (colNumberCount.containsKey(col[j].number)) {
+					Logger.log(LogLevel.Error,
+							"solution check failed because number " + col[j]
+									+ " appeared twice in column " + i);
+					return false;
+				} else {
+					colNumberCount.put(col[j].number, 1);
+				}
+
+				if (blockNumberCount.containsKey(block[j].number)) {
+					Logger.log(LogLevel.Error,
+							"solution check failed because number " + block[j]
+									+ " appeared twice in block " + i);
+					return false;
+				} else {
+					blockNumberCount.put(block[j].number, 1);
+				}
+
+			}
+		}
+
+		return true;
 	}
 
 }
