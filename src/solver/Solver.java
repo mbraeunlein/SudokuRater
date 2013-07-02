@@ -20,11 +20,13 @@ public class Solver {
 			updateConstraints();
 
 			for (int i = 1; i < 10; i++) {
-				fv.addNumberCount(i, sudoku.numberCount(i));
+				int count = sudoku.numberCount(i);
+				fv.addNumberCount(count);
 			}
 
 			for (int i = 1; i < 10; i++) {
-				fv.addPossibilityCount(i, sudoku.possibilityCount(i));
+				int count = sudoku.possibilityCount(i);
+				fv.addPossibilityCount(count);
 			}
 
 		} catch (Exception e) {

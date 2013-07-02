@@ -1,12 +1,13 @@
 package model;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class FeatureVector {
 	// Häufigkeitsverteilung
-	private HashMap<Method, HashMap<Integer, Integer>> methods = new HashMap<Method, HashMap<Integer, Integer>>();
-	private HashMap<Integer, Integer> numbers = new HashMap<Integer, Integer>();
-	private HashMap<Integer, Integer> possibilities = new HashMap<Integer, Integer>();
+	public HashMap<Method, HashMap<Integer, Integer>> methods = new HashMap<Method, HashMap<Integer, Integer>>();
+	public ArrayList<Integer> numbers = new ArrayList<Integer>();
+	public ArrayList<Integer> possibilities = new ArrayList<Integer>();
 
 	public FeatureVector() {
 		Method[] m = Method.values();
@@ -23,12 +24,12 @@ public class FeatureVector {
 
 		// iterate over every number
 		for (int i = 1; i < 10; i++) {
-			numbers.put(i, 0);
+			numbers.add(0);
 		}
 
 		// iterate over every possibilitiy
 		for (int i = 1; i < 10; i++) {
-			possibilities.put(i, 0);
+			possibilities.add(0);
 		}
 	}
 
@@ -51,12 +52,24 @@ public class FeatureVector {
 		methods.put(method, removedCounterList);
 	}
 
-	public void addNumberCount(int number, int count) {
-		numbers.put(number, count);
+	public void addNumberCount(int count) {
+		numbers.add(count);
+		for(int i = 0; i < numbers.size(); i++) {
+			if(numbers.get(i) < count) {
+				numbers.add(i, count);
+				return;
+			}
+		}
 	}
 
-	public void addPossibilityCount(int number, int count) {
-		possibilities.put(number, count);
+	public void addPossibilityCount(int count) {
+		possibilities.add(count);
+		for(int i = 0; i < possibilities.size(); i++) {
+			if(possibilities.get(i) < count) {
+				possibilities.add(i, count);
+				return;
+			}
+		}
 	}
 
 	@Override
@@ -85,20 +98,16 @@ public class FeatureVector {
 
 		s += "\n\n\namount of already filled in numbers at the start\n\n";
 		// iterate over every number
-		for (int i = 1; i < 10; i++) {
-			int count = 0;
-			if (numbers.containsKey(i))
-				count = numbers.get(i);
+		for (int i = 0; i < 9; i++) {
+			int count = numbers.get(i);
 
 			s += "\t" + i + ": " + count + "\n";
 		}
 
 		s += "\n\n\namount of possible fields at the start\n\n";
 		// iterate over every possibility
-		for (int i = 1; i < 10; i++) {
-			int count = 0;
-			if (possibilities.containsKey(i))
-				count = possibilities.get(i);
+		for (int i = 0; i < 9; i++) {
+			int count = possibilities.get(i);
 
 			s += "\t" + i + ": " + count + "\n";
 		}
