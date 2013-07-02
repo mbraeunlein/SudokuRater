@@ -35,11 +35,11 @@ public class kNearestNeighbor {
 				for (int j = 0; j < vectors.size(); j++) {
 					// compute the distance and add it to the neighbors
 					double distance = featureVector.getEuklidDistance(vectors
-							.get(j));
+							.get(j), 2, 1, 1);
 					neighbors.add(new Tuple<Double, Classification>(distance, classifications[i]));
 				}
 			} else {
-				Logger.log(LogLevel.GeneralInformation,
+				Logger.log(LogLevel.Debug,
 						"No example for classification " + classifications[i]
 								+ " learned!");
 			}

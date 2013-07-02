@@ -3,6 +3,7 @@ package model;
 import java.util.HashMap;
 
 public class FeatureVector {
+	// Häufigkeitsverteilung
 	private HashMap<Method, HashMap<Integer, Integer>> methods = new HashMap<Method, HashMap<Integer, Integer>>();
 	private HashMap<Integer, Integer> numbers = new HashMap<Integer, Integer>();
 	private HashMap<Integer, Integer> possibilities = new HashMap<Integer, Integer>();
