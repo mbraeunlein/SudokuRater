@@ -2,10 +2,12 @@ package model;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Set;
 
 public class FeatureVector {
 	// Häufigkeitsverteilung
-	public HashMap<Method, HashMap<Integer, Integer>> methods = new HashMap<Method, HashMap<Integer, Integer>>();
+	private HashMap<Method, HashMap<Integer, Integer>> methods = new HashMap<Method, HashMap<Integer, Integer>>();
 	public ArrayList<Integer> numbers = new ArrayList<Integer>();
 	public ArrayList<Integer> possibilities = new ArrayList<Integer>();
 
@@ -31,6 +33,41 @@ public class FeatureVector {
 		for (int i = 1; i < 10; i++) {
 			possibilities.add(0);
 		}
+	}
+	
+	// anzahl unabhängig von der konkreten zahl machen, höchste anzahl zuerst
+	public HashMap<Method, ArrayList<Integer>> getMethods() {
+		HashMap<Method, ArrayList<Integer>> sortedMethods = new HashMap<Method, ArrayList<Integer>>();
+		
+		Method[] m = Method.values();
+
+		// iterate over every method
+		for (int i = 0; i < m.length; i++) {
+			ArrayList<Integer> sortedCount = new ArrayList<Integer>();
+			sortedCount.add(0);
+			HashMap<Integer, Integer> removedCounterList = methods.get(m[i]);
+
+			
+			Set<Integer> keys = removedCounterList.keySet();
+			Iterator<Integer> it = keys.iterator();
+			
+			while(it.hasNext()) {
+				int next = it.next();
+				int count = removedCounterList.get(next);
+				
+				for(int j = 0; j < sortedCount.size(); j++) {
+					if(sortedCount.get(j) <= count) {
+						sortedCount.add(j, count);
+						break;
+					}
+				}
+			}
+			
+			sortedCount.remove(9);
+			sortedMethods.put(m[i], sortedCount);
+		}
+		
+		return sortedMethods;
 	}
 
 	public void addMethod(Method method, int number) {
@@ -77,21 +114,20 @@ public class FeatureVector {
 		String s = "";
 
 		s += "Used methods:\n";
+		HashMap<Method, ArrayList<Integer>> methodList = getMethods();
 		Method[] m = Method.values();
 
 		// iterate over every method
 		for (int i = 0; i < m.length; i++) {
 			s += "\n\n\t" + m[i].toString() + "\n\n";
 
-			HashMap<Integer, Integer> removedCounterList = new HashMap<Integer, Integer>();
-			if (methods.containsKey(m[i]))
-				removedCounterList = methods.get(m[i]);
+			ArrayList<Integer> removedCounterList = new ArrayList<Integer>();
+			if (methodList.containsKey(m[i]))
+				removedCounterList = methodList.get(m[i]);
 
 			// iterate over every number
-			for (int j = 1; j < 10; j++) {
-				int count = 0;
-				if (removedCounterList.containsKey(j))
-					count = removedCounterList.get(j);
+			for (int j = 0; j < 9; j++) {
+				int count = removedCounterList.get(j);
 				s += "\t\t" + j + ": " + count + "\n";
 			}
 		}
@@ -112,52 +148,5 @@ public class FeatureVector {
 			s += "\t" + i + ": " + count + "\n";
 		}
 		return s;
-	}
-
-	public double getEuklidDistance(FeatureVector other) {
-		return getEuklidDistance(other, 1, 1, 1);
-	}
-
-	public double getEuklidDistance(FeatureVector other, int methodWeight,
-			int startNumbersWeight, int startPossibilitiesWeight) {
-
-		double result = 0;
-
-		Method[] m = Method.values();
-
-		// iterate over every method
-		for (int i = 0; i < m.length; i++) {
-
-			HashMap<Integer, Integer> removedNumberList = methods.get(m[i]);
-			HashMap<Integer, Integer> otherRemovedNumberList = other.methods
-					.get(m[i]);
-
-			// iterate over every number
-			for (int j = 1; j < 10; j++) {
-				// add the distance between the two positions in the vector
-				result += methodWeight
-						* Math.pow(removedNumberList.get(j)
-								- otherRemovedNumberList.get(j), 2);
-			}
-		}
-
-		// iterate over every number
-		for (int i = 1; i < 10; i++) {
-			int count = numbers.get(i);
-			int otherCount = other.numbers.get(i);
-
-			result += startNumbersWeight * Math.pow(count - otherCount, 2);
-		}
-
-		// iterate over every possibility
-		for (int i = 1; i < 10; i++) {
-			int count = possibilities.get(i);
-			int otherCount = other.possibilities.get(i);
-			
-			result += startPossibilitiesWeight * Math.pow(count - otherCount, 2);
-		}
-
-		result = Math.sqrt(result);
-		return result;
 	}
 }
