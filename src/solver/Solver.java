@@ -60,8 +60,7 @@ public class Solver {
 					changed = true;
 					break;
 				} else {
-					Logger.log(LogLevel.SolvingMethods,
-							"no naked single found");
+					Logger.log(LogLevel.SolvingMethods, "no naked single found");
 					count++;
 					break;
 				}
@@ -149,8 +148,17 @@ public class Solver {
 					break;
 				}
 			case 9:
+				if (swordFish()) {
+					count = 0;
+					changed = true;
+					break;
+				} else {
+					Logger.log(LogLevel.SolvingMethods, "no swordfish found");
+					count++;
+					break;
+				}
+			case 10:
 				changed = false;
-
 				// compute how many numbers would have to be computed by
 				// backtracking
 				for (int i = 1; i < 10; i++) {
@@ -162,7 +170,7 @@ public class Solver {
 				return sudoku;
 			}
 		} catch (Exception ex) {
-
+			
 		}
 		return sudoku;
 	}
@@ -174,91 +182,9 @@ public class Solver {
 		return sudoku;
 	}
 
-	private void updateConstraints() throws Exception {
-		for (int row = 0; row < 9; row++) {
-			for (int col = 0; col < 9; col++) {
-				int number = sudoku.getField(row, col).number;
-				if (number != 0) {
-					for (int pos = 0; pos < 9; pos++) {
-						if (sudoku.getField(row, pos).posibilities
-								.contains(number))
-							sudoku.removePosibility(row, pos, number);
-						if (sudoku.getField(pos, col).posibilities
-								.contains(number))
-							sudoku.removePosibility(pos, col, number);
-						if (sudoku.get(Figure.Block,
-								sudoku.getContainingBlockNumber(row, col))[pos].posibilities
-								.contains(number))
-							sudoku.removePossibilityInBlock(
-									sudoku.getContainingBlockNumber(row, col),
-									pos, number);
-					}
-				}
-			}
-		}
-	}
+	// LÖSUNGSTCHNIKEN
 
-	private HashMap<Integer, ArrayList<Integer>> getPositionList(Figure figure,
-			int id) throws Exception {
-
-		HashMap<Integer, ArrayList<Integer>> positionList = new HashMap<Integer, ArrayList<Integer>>();
-
-		Field[] fields = sudoku.get(figure, id);
-
-		// iterate over every field of the figure
-		for (int i = 0; i < 9; i++) {
-			Field field = fields[i];
-			// iterate over every possibility of the field
-			for (int pos = 0; pos < field.posibilities.size(); pos++) {
-				int number = field.posibilities.get(pos);
-
-				// list of positions, where the number appears
-				ArrayList<Integer> positions = new ArrayList<Integer>();
-
-				// if the number already appeared then fetch the current
-				// position list
-				if (positionList.containsKey(number))
-					positions = positionList.get(number);
-				positions.add(i);
-
-				// update the list
-				positionList.put(number, positions);
-			}
-		}
-		return positionList;
-	}
-
-	private ArrayList<Integer> disjunction(ArrayList<Integer> l1,
-			ArrayList<Integer> l2) {
-
-		ArrayList<Integer> newList = new ArrayList<Integer>();
-
-		for (int i = 0; i < l1.size(); i++) {
-			if (!newList.contains(l1.get(i)))
-				newList.add(l1.get(i));
-		}
-		for (int i = 0; i < l2.size(); i++) {
-			if (!newList.contains(l2.get(i)))
-				newList.add(l2.get(i));
-		}
-
-		return newList;
-	}
-
-	public ArrayList<Vector<Integer>> conjunction(
-			ArrayList<Vector<Integer>> l1, ArrayList<Vector<Integer>> l2) {
-		ArrayList<Vector<Integer>> conj = new ArrayList<Vector<Integer>>();
-
-		if (l1 == null || l1.size() == 0 || l2 == null || l2.size() == 0)
-			return conj;
-		for (int i = 0; i < l1.size(); i++) {
-			if (l2.contains(l1.get(i)))
-				conj.add(l1.get(i));
-		}
-
-		return conj;
-	}
-
+	// http://sudoku.soeinding.de/strategie/strategie02a.php
 	private boolean nakedSingles() throws Exception {
 
 		for (int row = 0; row < 9; row++) {
@@ -279,6 +205,7 @@ public class Solver {
 		return false;
 	}
 
+	// http://sudoku.soeinding.de/strategie/strategie02b.php
 	private boolean hiddenSingles() throws Exception {
 
 		// iterate over every figure
@@ -334,6 +261,7 @@ public class Solver {
 		return false;
 	}
 
+	// http://www.sudokuwiki.org/Naked_Candidates#NP
 	private boolean nakedTupel() throws Exception {
 		// iterate over every figure
 		for (int f = 0; f < 9; f++) {
@@ -454,6 +382,7 @@ public class Solver {
 		return false;
 	}
 
+	// http://www.sudokuwiki.org/Hidden_Candidates#HP
 	private boolean hiddenTupel() throws Exception {
 
 		// iterate over every figure
@@ -594,6 +523,7 @@ public class Solver {
 		return false;
 	}
 
+	// http://www.sudokuwiki.org/Naked_Candidates#NP
 	private boolean nakedTripel() throws Exception {
 
 		// iterate over every figure
@@ -734,6 +664,7 @@ public class Solver {
 		return false;
 	}
 
+	// http://www.sudokuwiki.org/Hidden_Candidates#HP
 	private boolean hiddenTripel() throws Exception {
 
 		// iterate over every figure
@@ -881,6 +812,7 @@ public class Solver {
 		return false;
 	}
 
+	// http://sudoku.soeinding.de/strategie/strategie02f.php
 	private boolean crossing() throws Exception {
 
 		// iterate over every row
@@ -1332,6 +1264,7 @@ public class Solver {
 		return false;
 	}
 
+	// http://sudoku.soeinding.de/strategie/strategie02g.php
 	public boolean grid() throws Exception {
 		// iterate over every number
 		for (int number = 1; number < 10; number++) {
@@ -1438,6 +1371,7 @@ public class Solver {
 		return false;
 	}
 
+	// http://hodoku.sourceforge.net/en/tech_wings.php
 	public boolean xyWing() throws Exception {
 		// iterate over all fields of the sudoku
 		for (int row = 0; row < 9; row++) {
@@ -1496,13 +1430,15 @@ public class Solver {
 											buddyList.get(buddy2).get(0),
 											buddyList.get(buddy2).get(1));
 
-									// if the second buddy has x and z as only possibilities, then we found an xy wing
+									// if the second buddy has x and z as only
+									// possibilities, then we found an xy wing
 									if (xz.number == 0
 											&& xz.posibilities.size() == 2) {
 										if (xz.posibilities.contains(x)
 												&& xz.posibilities.contains(z)) {
 
-											// get a list of all buddies of the buddies
+											// get a list of all buddies of the
+											// buddies
 											ArrayList<Vector<Integer>> buddy1buddys = getBuddies(
 													buddyList.get(buddy1)
 															.get(0), buddyList
@@ -1511,12 +1447,14 @@ public class Solver {
 													buddyList.get(buddy2)
 															.get(0), buddyList
 															.get(buddy2).get(1));
-											
-											// conjunct it to get the common buddies
+
+											// conjunct it to get the common
+											// buddies
 											ArrayList<Vector<Integer>> removeNumberFrom = conjunction(
 													buddy1buddys, buddy2buddys);
 
-											// remove themself and the xy field from the common buddy list
+											// remove themself and the xy field
+											// from the common buddy list
 											removeNumberFrom.remove(buddyList
 													.get(buddy1));
 											removeNumberFrom.remove(buddyList
@@ -1528,7 +1466,8 @@ public class Solver {
 
 											int posCount = 0;
 
-											// go through all common buddies and remove z if it is in there 
+											// go through all common buddies and
+											// remove z if it is in there
 											for (int i = 0; i < removeNumberFrom
 													.size(); i++) {
 												Field f = sudoku.getField(
@@ -1578,7 +1517,10 @@ public class Solver {
 																+ buddyList
 																		.get(buddy2)
 																		.get(1)
-																+ " ]" +  " removed " + posCount + " possibilities");
+																+ " ]"
+																+ " removed "
+																+ posCount
+																+ " possibilities");
 												return true;
 											}
 										}
@@ -1592,6 +1534,218 @@ public class Solver {
 		}
 
 		return false;
+	}
+
+	// http://www.sudokuwiki.org/Sword_Fish_Strategy
+	public boolean swordFish() throws Exception {
+		// iterate over every number
+		for (int number = 1; number < 10; number++) {
+
+			// compare 3 figures (rows or columns)
+			for (int f1 = 0; f1 < 9; f1++) {
+				for (int f2 = f1 + 1; f2 < 9; f2++) {
+					for (int f3 = f2 + 1; f3 < 9; f3++) {
+						// get the position lists for the rows
+						ArrayList<Integer> posList1 = getPositionList(
+								Figure.Row, f1).get(number);
+						ArrayList<Integer> posList2 = getPositionList(
+								Figure.Row, f2).get(number);
+						ArrayList<Integer> posList3 = getPositionList(
+								Figure.Row, f3).get(number);
+
+						// check for a swordfish
+						HashSet<Integer> hs = new HashSet<Integer>();
+						if(posList1 != null)
+							hs.addAll(posList1);
+						if(posList2 != null)
+							hs.addAll(posList2);
+						if(posList3 != null)
+							hs.addAll(posList3);
+						ArrayList<Integer> positions = new ArrayList<Integer>();
+						positions.addAll(hs);
+
+						if (posList1 != null && posList2 != null && posList3 != null && positions.size() == 3) {
+							int posCount = 0;
+
+							for (int i = 0; i < 9; i++) {
+								if (!positions.contains(i)) {
+									if (sudoku.getField(i, positions.get(0)).posibilities
+											.contains(i)) {
+										sudoku.removePosibility(i, positions.get(0), number);
+										posCount++;
+									}
+									if (sudoku.getField(i, positions.get(1)).posibilities
+											.contains(i)) {
+										sudoku.removePosibility(i, positions.get(1), number);
+										posCount++;
+									}
+									if (sudoku.getField(i, positions.get(2)).posibilities
+											.contains(i)) {
+										sudoku.removePosibility(i, positions.get(2), number);
+										posCount++;
+									}
+								}
+							}
+
+							if (posCount > 0) {
+								Logger.log(LogLevel.SolvingMethods,
+										"Sword fish found rows " + f1 + ", "
+												+ f2 + ", " + f3 + " number "
+												+ number + " removed "
+												+ posCount + " possibilities");
+								return true;
+							}
+						}
+						
+						// same for columns
+						posList1 = getPositionList(
+								Figure.Column, f1).get(number);
+						posList2 = getPositionList(
+								Figure.Column, f2).get(number);
+						posList3 = getPositionList(
+								Figure.Column, f3).get(number);
+						
+						hs.clear();
+						if(posList1 != null)
+							hs.addAll(posList1);
+						if(posList2 != null)
+							hs.addAll(posList2);
+						if(posList3 != null)
+							hs.addAll(posList3);
+						
+						positions.clear();
+						positions.addAll(hs);
+						
+						if(number == 9 && f1 == 1 && f2 == 4 && f3 == 7) {
+							System.out.println("now");
+						}
+						
+						if (posList1 != null && posList2 != null && posList3 != null && positions.size() == 3) {
+							int posCount = 0;
+
+							for (int i = 0; i < 9; i++) {
+								if (!positions.contains(i)) {
+									if (sudoku.getField(positions.get(0), i).posibilities
+											.contains(i)) {
+										// TODO: wird irgendwie nicht gelöscht
+										sudoku.removePosibility(positions.get(0), i, number);
+										posCount++;
+									}
+									if (sudoku.getField(positions.get(1), i).posibilities
+											.contains(i)) {
+										sudoku.removePosibility(positions.get(1), i, number);
+										posCount++;
+									}
+									if (sudoku.getField(positions.get(2), i).posibilities
+											.contains(i)) {
+										sudoku.removePosibility(positions.get(2), i, number);
+										posCount++;
+									}
+								}
+							}
+
+							if (posCount > 0) {
+								Logger.log(LogLevel.SolvingMethods,
+										"Sword fish found columns " + f1 + ", "
+												+ f2 + ", " + f3 + " number "
+												+ number + " removed "
+												+ posCount + " possibilities");
+								return true;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	// HILFSFUNKTIONEN
+
+	private void updateConstraints() throws Exception {
+		for (int row = 0; row < 9; row++) {
+			for (int col = 0; col < 9; col++) {
+				int number = sudoku.getField(row, col).number;
+				if (number != 0) {
+					for (int pos = 0; pos < 9; pos++) {
+						if (sudoku.getField(row, pos).posibilities
+								.contains(number))
+							sudoku.removePosibility(row, pos, number);
+						if (sudoku.getField(pos, col).posibilities
+								.contains(number))
+							sudoku.removePosibility(pos, col, number);
+						if (sudoku.get(Figure.Block,
+								sudoku.getContainingBlockNumber(row, col))[pos].posibilities
+								.contains(number))
+							sudoku.removePossibilityInBlock(
+									sudoku.getContainingBlockNumber(row, col),
+									pos, number);
+					}
+				}
+			}
+		}
+	}
+
+	private HashMap<Integer, ArrayList<Integer>> getPositionList(Figure figure,
+			int id) throws Exception {
+
+		HashMap<Integer, ArrayList<Integer>> positionList = new HashMap<Integer, ArrayList<Integer>>();
+
+		Field[] fields = sudoku.get(figure, id);
+
+		// iterate over every field of the figure
+		for (int i = 0; i < 9; i++) {
+			Field field = fields[i];
+			// iterate over every possibility of the field
+			for (int pos = 0; pos < field.posibilities.size(); pos++) {
+				int number = field.posibilities.get(pos);
+
+				// list of positions, where the number appears
+				ArrayList<Integer> positions = new ArrayList<Integer>();
+
+				// if the number already appeared then fetch the current
+				// position list
+				if (positionList.containsKey(number))
+					positions = positionList.get(number);
+				positions.add(i);
+
+				// update the list
+				positionList.put(number, positions);
+			}
+		}
+		return positionList;
+	}
+
+	private ArrayList<Integer> disjunction(ArrayList<Integer> l1,
+			ArrayList<Integer> l2) {
+
+		ArrayList<Integer> newList = new ArrayList<Integer>();
+
+		for (int i = 0; i < l1.size(); i++) {
+			if (!newList.contains(l1.get(i)))
+				newList.add(l1.get(i));
+		}
+		for (int i = 0; i < l2.size(); i++) {
+			if (!newList.contains(l2.get(i)))
+				newList.add(l2.get(i));
+		}
+
+		return newList;
+	}
+
+	private ArrayList<Vector<Integer>> conjunction(
+			ArrayList<Vector<Integer>> l1, ArrayList<Vector<Integer>> l2) {
+		ArrayList<Vector<Integer>> conj = new ArrayList<Vector<Integer>>();
+
+		if (l1 == null || l1.size() == 0 || l2 == null || l2.size() == 0)
+			return conj;
+		for (int i = 0; i < l1.size(); i++) {
+			if (l2.contains(l1.get(i)))
+				conj.add(l1.get(i));
+		}
+
+		return conj;
 	}
 
 	private ArrayList<Vector<Integer>> getBuddies(int row, int column)
@@ -1648,6 +1802,20 @@ public class Solver {
 		}
 
 		return buddyList;
+	}
+
+	public boolean areEqual(ArrayList<Integer> l1, ArrayList<Integer> l2) {
+		if (l1.size() == l2.size()) {
+			for (int i = 0; i < l1.size(); i++) {
+				if (!l1.contains(l2.get(i)))
+					return false;
+				if (!l2.contains(l1.get(i)))
+					return false;
+			}
+			return true;
+		}
+
+		return false;
 	}
 
 	public boolean solutionCheck() throws Exception {
