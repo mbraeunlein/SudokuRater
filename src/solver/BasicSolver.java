@@ -9,7 +9,7 @@ public class BasicSolver {
 				Field field = sudoku.getField(row, column);
 				// only update possibilities if the field isnt filled yet
 				if (field.number == 0) {
-					Field[] rowNumbers = sudoku.getRow(row);
+					Field[] rowNumbers = sudoku.get(Figure.Row, row);
 					// for every number in the row remove the possibility in the current field
 					for(int i = 0; i < rowNumbers.length; i++) {
 						if(rowNumbers[i].number != 0) {
@@ -17,7 +17,7 @@ public class BasicSolver {
 						}
 					}
 					
-					Field[] columnNumbers = sudoku.getColumn(column);
+					Field[] columnNumbers = sudoku.get(Figure.Column, column);
 					// for every number in the column remove the possibility in the current field
 					for(int i = 0; i < columnNumbers.length; i++) {
 						if(columnNumbers[i].number != 0) {
@@ -25,7 +25,7 @@ public class BasicSolver {
 						}
 					}
 					
-					Field[] blockNumbers = sudoku.getBlock(sudoku.getContainingBlockNumber(row, column));
+					Field[] blockNumbers = sudoku.get(Figure.Block, sudoku.getContainingBlockNumber(row, column));
 					// for every number in the block remove the possibility in the current field
 					for(int i = 0; i < blockNumbers.length; i++) {
 						if(blockNumbers[i].number != 0) {

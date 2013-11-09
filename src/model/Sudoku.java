@@ -1,8 +1,11 @@
 package model;
 
+import io.LogLevel;
+import io.Logger;
+
 import java.util.*;
 
-public class Sudoku implements Cloneable {
+public class Sudoku {
 	// Erst Reihe dann Spalte
 	private Field[][] board = new Field[9][9];
 
@@ -50,13 +53,12 @@ public class Sudoku implements Cloneable {
 		board[row][column] = field;
 	}
 
-	public void setFieldInBlock(int blockNumber, int position, Field field)
-			throws Exception {
+	public void setFieldInBlock(int blockNumber, int position, Field field) {
 		if (blockNumber < 0 || blockNumber > 8) {
-			throw new Exception("the block number has to be between 0 and 8");
+			Logger.log(LogLevel.Error, "the block number has to be between 0 and 8");
 		}
 		if (position < 0 || position > 8) {
-			throw new Exception("the position has to be between 0 and 8");
+			Logger.log(LogLevel.Error, "the position has to be between 0 and 8");
 		}
 
 		// calculate x and y position of the block
@@ -83,10 +85,10 @@ public class Sudoku implements Cloneable {
 		board[yOffset][xOffset] = field;
 	}
 
-	public Field[] get(Figure figure, int number) throws Exception {
+	public Field[] get(Figure figure, int number) {
 		if (figure == Figure.Row) {
 			if (number < 0 || number > 8) {
-				throw new Exception("the number has to be between 0 and 8");
+				Logger.log(LogLevel.Error, "the number has to be between 0 and 8");
 			}
 			Field[] row = new Field[9];
 			for (int i = 0; i < 9; i++) {
@@ -96,7 +98,7 @@ public class Sudoku implements Cloneable {
 		}
 		if (figure == Figure.Column) {
 			if (number < 0 || number > 8) {
-				throw new Exception("the number has to be between 0 and 8");
+				Logger.log(LogLevel.Error, "the number has to be between 0 and 8");
 			}
 			Field[] column = new Field[9];
 			for (int i = 0; i < 9; i++) {
@@ -106,7 +108,7 @@ public class Sudoku implements Cloneable {
 		}
 		if (figure == Figure.Block) {
 			if (number < 0 || number > 8) {
-				throw new Exception("the number has to be between 0 and 8");
+				Logger.log(LogLevel.Error, "the number has to be between 0 and 8");
 			}
 			Field[] block = new Field[9];
 
@@ -126,7 +128,7 @@ public class Sudoku implements Cloneable {
 			return block;
 		}
 
-		throw new Exception("the given figure isnt yet implemented");
+		return null;
 	}
 
 	public int getContainingBlockNumber(int row, int column) {
@@ -200,14 +202,13 @@ public class Sudoku implements Cloneable {
 	}
 
 	// removes a possibility in a field specified by the row and the column
-	public void removePosibility(int row, int column, int number)
-			throws Exception {
+	public void removePosibility(int row, int column, int number) {
 		if (row < 0 || row > 8)
-			throw new Exception("row has to be between 0 and 8");
+			Logger.log(LogLevel.Error, "row has to be between 0 and 8");
 		if (column < 0 || column > 8)
-			throw new Exception("column has to be between 0 and 8");
+			Logger.log(LogLevel.Error, "column has to be between 0 and 8");
 		if (number < 1 || number > 9)
-			throw new Exception("number has to be between 1 and 9");
+			Logger.log(LogLevel.Error, "number has to be between 1 and 9");
 		if (board[row][column].posibilities.size() == 0)
 			return;
 
@@ -220,18 +221,18 @@ public class Sudoku implements Cloneable {
 		}
 
 		if (newPosibilities.size() == 0)
-			throw new Exception("no possibilities left");
+			Logger.log(LogLevel.Error, "no possibilities left");
 
 		board[row][column].posibilities = newPosibilities;
 	}
 
 	public void removePossibilityInBlock(int blockNumber, int position,
-			int number) throws Exception {
+			int number) {
 		if (blockNumber < 0 || blockNumber > 8) {
-			throw new Exception("the block number has to be between 0 and 8");
+			Logger.log(LogLevel.Error, "the block number has to be between 0 and 8");
 		}
 		if (position < 0 || position > 8) {
-			throw new Exception("the position has to be between 0 and 8");
+			Logger.log(LogLevel.Error, "the position has to be between 0 and 8");
 		}
 
 		// calculate x and y position of the block
@@ -259,7 +260,7 @@ public class Sudoku implements Cloneable {
 	}
 
 	// indicates weather the given number is in the figure indetified by the id
-	public boolean isIn(Figure figure, int id, int number) throws Exception {
+	public boolean isIn(Figure figure, int id, int number) {
 		Field[] x = get(figure, id);
 		for (int i = 0; i < 9; i++) {
 			if (number == x[i].number)

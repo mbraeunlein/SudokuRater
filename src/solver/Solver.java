@@ -5,6 +5,7 @@ import io.Logger;
 
 import java.util.*;
 
+import sun.reflect.ReflectionFactory.GetReflectionFactoryAction;
 import model.*;
 
 public class Solver {
@@ -64,6 +65,7 @@ public class Solver {
 					count++;
 					break;
 				}
+
 			case 1:
 				if (hiddenSingles()) {
 					count = 0;
@@ -75,85 +77,90 @@ public class Solver {
 					count++;
 					break;
 				}
+
 			case 2:
-				if (nakedTupel()) {
+				if (intersections()) {
 					count = 0;
 					changed = true;
 					break;
 				} else {
-					Logger.log(LogLevel.SolvingMethods, "no naked tupel found");
+					Logger.log(LogLevel.SolvingMethods,
+							"no hidden single found");
 					count++;
 					break;
 				}
 
 			case 3:
-				if (hiddenTupel()) {
+				if (nakedPairs()) {
 					count = 0;
 					changed = true;
 					break;
 				} else {
-					Logger.log(LogLevel.SolvingMethods, "no hidden tupel found");
+					Logger.log(LogLevel.SolvingMethods, "no naked pair found");
 					count++;
 					break;
 				}
-
 			case 4:
-				if (nakedTripel()) {
+				if (hiddenPairs()) {
 					count = 0;
 					changed = true;
 					break;
 				} else {
-					Logger.log(LogLevel.SolvingMethods, "no naked tripel found");
+					Logger.log(LogLevel.SolvingMethods, "no hidden pair found");
 					count++;
 					break;
 				}
 			case 5:
-				if (hiddenTripel()) {
+				if (nakedTriples()) {
 					count = 0;
 					changed = true;
 					break;
 				} else {
-					Logger.log(LogLevel.SolvingMethods, "no naked tripel found");
+					Logger.log(LogLevel.SolvingMethods, "no naked triple found");
 					count++;
 					break;
 				}
 			case 6:
-				if (crossing()) {
+				if (hiddenTriples()) {
 					count = 0;
 					changed = true;
 					break;
 				} else {
-					Logger.log(LogLevel.SolvingMethods, "no crossing found");
+					Logger.log(LogLevel.SolvingMethods,
+							"no hidden triple found");
 					count++;
 					break;
 				}
 			case 7:
-				if (grid()) {
+				if (xWing()) {
 					count = 0;
 					changed = true;
 					break;
 				} else {
-					Logger.log(LogLevel.SolvingMethods, "no grid found");
+					Logger.log(LogLevel.SolvingMethods,
+							"no hidden triple found");
 					count++;
 					break;
 				}
 			case 8:
-				if (xyWing()) {
-					count = 0;
-					changed = true;
-					break;
-				} else {
-					Logger.log(LogLevel.SolvingMethods, "no xyWing found");
-					count++;
-					break;
-				}
-			case 9:
 				if (swordFish()) {
 					count = 0;
 					changed = true;
 					break;
 				} else {
-					Logger.log(LogLevel.SolvingMethods, "no swordfish found");
+					Logger.log(LogLevel.SolvingMethods,
+							"no hidden triple found");
+					count++;
+					break;
+				}
+			case 9:
+				if (jellyFish()) {
+					count = 0;
+					changed = true;
+					break;
+				} else {
+					Logger.log(LogLevel.SolvingMethods,
+							"no hidden triple found");
 					count++;
 					break;
 				}
@@ -170,7 +177,7 @@ public class Solver {
 				return sudoku;
 			}
 		} catch (Exception ex) {
-			
+
 		}
 		return sudoku;
 	}
@@ -185,7 +192,7 @@ public class Solver {
 	// LÖSUNGSTCHNIKEN
 
 	// http://sudoku.soeinding.de/strategie/strategie02a.php
-	private boolean nakedSingles() throws Exception {
+	private boolean nakedSingles() {
 
 		for (int row = 0; row < 9; row++) {
 			for (int column = 0; column < 9; column++) {
@@ -206,7 +213,7 @@ public class Solver {
 	}
 
 	// http://sudoku.soeinding.de/strategie/strategie02b.php
-	private boolean hiddenSingles() throws Exception {
+	private boolean hiddenSingles() {
 
 		// iterate over every figure
 		for (int f = 0; f < 9; f++) {
@@ -261,8 +268,349 @@ public class Solver {
 		return false;
 	}
 
-	// http://www.sudokuwiki.org/Naked_Candidates#NP
-	private boolean nakedTupel() throws Exception {
+	// http://hodoku.sourceforge.net/de/tech_intersections.php
+	private boolean intersections() {
+		// block-row intersections
+
+		// iterate over every block
+		for (int blockId = 0; blockId < 9; blockId++) {
+			Field[] block = sudoku.get(Figure.Block, blockId);
+
+			// generate 3 lists with all possibilities of the row
+			ArrayList<Integer> rowList1 = new ArrayList<Integer>();
+			ArrayList<Integer> rowList2 = new ArrayList<Integer>();
+			ArrayList<Integer> rowList3 = new ArrayList<Integer>();
+
+			ArrayList<Integer> colList1 = new ArrayList<Integer>();
+			ArrayList<Integer> colList2 = new ArrayList<Integer>();
+			ArrayList<Integer> colList3 = new ArrayList<Integer>();
+
+			// iterate over every field
+			for (int i = 0; i < 3; i++) {
+				if (block[i].number == 0)
+					rowList1 = disjunction(rowList1, block[i].posibilities);
+				if (block[i * 3].number == 0)
+					colList1 = disjunction(colList1, block[i * 3].posibilities);
+				if (block[3 + i].number == 0)
+					rowList2 = disjunction(rowList2, block[3 + i].posibilities);
+				if (block[i * 3 + 1].number == 0)
+					colList2 = disjunction(colList2,
+							block[i * 3 + 1].posibilities);
+				if (block[6 + i].number == 0)
+					rowList3 = disjunction(rowList3, block[6 + i].posibilities);
+				if (block[i * 3 + 2].number == 0)
+					colList3 = disjunction(colList3,
+							block[i * 3 + 2].posibilities);
+			}
+
+			// compute the numbers that are in one row/column only
+
+			// first row
+			ArrayList<Integer> firstRow = difference(
+					difference(rowList1, rowList2), rowList3);
+			// second row
+			ArrayList<Integer> secondRow = difference(
+					difference(rowList2, rowList1), rowList3);
+			// thrird row
+			ArrayList<Integer> thirdRow = difference(
+					difference(rowList3, rowList1), rowList2);
+
+			// first column
+			ArrayList<Integer> firstColumn = difference(
+					difference(colList1, colList2), colList3);
+
+			// second column
+			ArrayList<Integer> secondColumn = difference(
+					difference(colList2, colList1), colList3);
+
+			// third column
+			ArrayList<Integer> thirdColumn = difference(
+					difference(colList3, colList1), colList2);
+
+			ArrayList<ArrayList<Integer>> allRowLists = new ArrayList<ArrayList<Integer>>();
+			allRowLists.add(firstRow);
+			allRowLists.add(secondRow);
+			allRowLists.add(thirdRow);
+
+			ArrayList<ArrayList<Integer>> allColumnLists = new ArrayList<ArrayList<Integer>>();
+			allColumnLists.add(firstColumn);
+			allColumnLists.add(secondColumn);
+			allColumnLists.add(thirdColumn);
+
+			// iterate over every row/column in the block
+			for (int listNumber = 0; listNumber < 3; listNumber++) {
+
+				// get the numbers that are only in one row/column only
+				ArrayList<Integer> numbersRow = allRowLists.get(listNumber);
+				ArrayList<Integer> numbersColumn = allColumnLists
+						.get(listNumber);
+
+				if (numbersRow.size() > 0) {
+					// compute the global offset of the row by the block ID
+					int offset = 0;
+
+					if (blockId >= 3)
+						offset = 3;
+					if (blockId >= 6)
+						offset = 6;
+
+					Field[] row = sudoku.get(Figure.Row, offset + listNumber);
+
+					int posCount = 0;
+
+					// iterate over all fields of the row
+					for (int fieldId = 0; fieldId < 9; fieldId++) {
+						// check if the fields of the row are not in the current
+						// block
+						if (!(blockId % 3 == 0
+								&& (fieldId == 0 || fieldId == 1 || fieldId == 2)
+								|| blockId % 3 == 1
+								&& (fieldId == 3 || fieldId == 4 || fieldId == 5) || blockId % 3 == 2
+								&& (fieldId == 6 || fieldId == 7 || fieldId == 8))) {
+							// iterate over all found numbers
+							for (int i = 0; i < numbersRow.size(); i++) {
+								// if there is a possibility in the row then
+								// remove it
+								if (row[fieldId].posibilities
+										.contains(numbersRow.get(i))) {
+									sudoku.removePosibility(
+											offset + listNumber, fieldId,
+											numbersRow.get(i));
+									fv.addMethod(Method.Intersections,
+											numbersRow.get(i));
+									posCount++;
+								}
+							}
+						}
+					}
+
+					if (posCount > 0) {
+						Logger.log(LogLevel.SolvingMethods,
+								"block-row intersection block " + blockId
+										+ " removed " + posCount
+										+ " possibilities");
+						return true;
+					}
+				}
+
+				if (numbersColumn.size() > 0) {
+
+					// compute the global offset of the column by the block ID
+					int offset = blockId % 3 * 3;
+
+					Field[] column = sudoku.get(Figure.Column, offset
+							+ listNumber);
+
+					int posCount = 0;
+
+					// iterate over all fields in the column
+					for (int fieldId = 0; fieldId < 9; fieldId++) {
+						// check if the fields of the column are not in the
+						// current block
+						if ((blockId < 3 && fieldId != 0 && fieldId != 1 && fieldId != 2)
+								|| (blockId >= 3 && blockId < 6 && fieldId != 3
+										&& fieldId != 4 && fieldId != 5)
+								|| (blockId >= 6 && fieldId != 6
+										&& fieldId != 7 && fieldId != 8)) {
+							// iterate over all found numbers
+							for (int i = 0; i < numbersColumn.size(); i++) {
+								if (column[fieldId].posibilities
+										.contains(numbersColumn.get(i))) {
+									sudoku.removePosibility(fieldId, offset
+											+ listNumber, numbersColumn.get(i));
+									fv.addMethod(Method.Intersections,
+											numbersColumn.get(i));
+									posCount++;
+								}
+							}
+						}
+					}
+
+					if (posCount > 0) {
+						Logger.log(LogLevel.SolvingMethods,
+								"block-column intersection block " + blockId
+										+ " removed " + posCount
+										+ " possibilities");
+						return true;
+					}
+				}
+			}
+
+		}
+
+		// row-block intersections
+
+		// iterate over every row and column
+		for (int figure = 0; figure < 9; figure++) {
+
+			// get the row and the column
+			Field[] row = sudoku.get(Figure.Row, figure);
+			Field[] column = sudoku.get(Figure.Column, figure);
+
+			// generate 3 lists with all possibilities of the row / column in
+			// the block
+			ArrayList<Integer> rowList1 = new ArrayList<Integer>();
+			ArrayList<Integer> rowList2 = new ArrayList<Integer>();
+			ArrayList<Integer> rowList3 = new ArrayList<Integer>();
+
+			ArrayList<Integer> colList1 = new ArrayList<Integer>();
+			ArrayList<Integer> colList2 = new ArrayList<Integer>();
+			ArrayList<Integer> colList3 = new ArrayList<Integer>();
+
+			// iterate over every field
+			for (int i = 0; i < 3; i++) {
+				if (row[i].number == 0)
+					rowList1 = disjunction(rowList1, row[i].posibilities);
+				if (column[i].number == 0)
+					colList1 = disjunction(colList1, column[i].posibilities);
+				if (row[i + 3].number == 0)
+					rowList2 = disjunction(rowList2, row[i + 3].posibilities);
+				if (column[i + 3].number == 0)
+					colList2 = disjunction(colList2, column[i + 3].posibilities);
+				if (row[i + 6].number == 0)
+					rowList3 = disjunction(rowList3, row[i + 6].posibilities);
+				if (column[i + 6].number == 0)
+					colList3 = disjunction(colList3, column[i + 6].posibilities);
+			}
+
+			// compute the numbers that are in one block only
+			// first row
+			ArrayList<Integer> firstRow = difference(
+					difference(rowList1, rowList2), rowList3);
+			// second row
+			ArrayList<Integer> secondRow = difference(
+					difference(rowList2, rowList1), rowList3);
+			// thrird row
+			ArrayList<Integer> thirdRow = difference(
+					difference(rowList3, rowList1), rowList2);
+
+			// first column
+			ArrayList<Integer> firstColumn = difference(
+					difference(colList1, colList2), colList3);
+
+			// second column
+			ArrayList<Integer> secondColumn = difference(
+					difference(colList2, colList1), colList3);
+
+			// third column
+			ArrayList<Integer> thirdColumn = difference(
+					difference(colList3, colList1), colList2);
+
+			ArrayList<ArrayList<Integer>> allRowLists = new ArrayList<ArrayList<Integer>>();
+			allRowLists.add(firstRow);
+			allRowLists.add(secondRow);
+			allRowLists.add(thirdRow);
+
+			ArrayList<ArrayList<Integer>> allColumnLists = new ArrayList<ArrayList<Integer>>();
+			allColumnLists.add(firstColumn);
+			allColumnLists.add(secondColumn);
+			allColumnLists.add(thirdColumn);
+
+			// iterate over every row/column in the block
+			for (int listNumber = 0; listNumber < 3; listNumber++) {
+				ArrayList<Integer> rowList = allRowLists.get(listNumber);
+				ArrayList<Integer> colList = allColumnLists.get(listNumber);
+
+				// rows
+				if (rowList.size() > 0) {
+					// compute the block id
+					int blockOffset = 0;
+					if (figure > 2)
+						blockOffset = 3;
+					if (figure > 5)
+						blockOffset = 6;
+					int blockId = blockOffset + listNumber;
+
+					Field[] block = sudoku.get(Figure.Block, blockId);
+
+					int posCount = 0;
+
+					// iterate over every field in the block
+					for (int fieldId = 0; fieldId < 9; fieldId++) {
+						// check if the fields of the block are not in the
+						// current row
+						if ((figure % 3) * 3 != fieldId
+								&& (figure % 3) * 3 + 1 != fieldId
+								&& (figure % 3) * 3 + 2 != fieldId) {
+							Field field = block[fieldId];
+
+							// iterate over all found numbers
+							for (int i = 0; i < rowList.size(); i++) {
+								int number = rowList.get(i);
+
+								if (field.number == 0
+										&& field.posibilities.contains(number)) {
+									sudoku.removePossibilityInBlock(blockId,
+											fieldId, number);
+									fv.addMethod(Method.Intersections, number);
+									posCount++;
+								}
+							}
+						}
+					}
+
+					if (posCount > 0) {
+						Logger.log(LogLevel.SolvingMethods,
+								"row-block intersection row " + figure
+										+ " removed " + posCount
+										+ " possibilities");
+						return true;
+					}
+				}
+
+				// columns
+				if (colList.size() > 0) {
+					// compute the block id
+					int blockOffset = 0;
+					if (figure > 2)
+						blockOffset = 1;
+					if (figure > 5)
+						blockOffset = 2;
+					int blockId = blockOffset + 3 * listNumber;
+
+					Field[] block = sudoku.get(Figure.Block, blockId);
+
+					int posCount = 0;
+
+					// iterate over every field in the block
+					for (int fieldId = 0; fieldId < 9; fieldId++) {
+						// check if the fields of the block are not in the
+						// current row
+						if (figure % 3 != fieldId && figure % 3 + 3 != fieldId
+								&& figure % 3 + 6 != fieldId) {
+							Field field = block[fieldId];
+
+							// iterate over all found numbers
+							for (int i = 0; i < colList.size(); i++) {
+								int number = colList.get(i);
+
+								if (field.number == 0
+										&& field.posibilities.contains(number)) {
+									sudoku.removePossibilityInBlock(blockId,
+											fieldId, number);
+									fv.addMethod(Method.Intersections, number);
+									posCount++;
+								}
+							}
+						}
+					}
+
+					if (posCount > 0) {
+						Logger.log(LogLevel.SolvingMethods,
+								"col-block intersection column " + figure
+										+ " removed " + posCount
+										+ " possibilities");
+						return true;
+					}
+				}
+			}
+
+		}
+
+		return false;
+	}
+
+	private boolean nakedPairs() {
 		// iterate over every figure
 		for (int f = 0; f < 9; f++) {
 			Field[] row = sudoku.get(Figure.Row, f);
@@ -281,6 +629,7 @@ public class Solver {
 					ArrayList<Integer> blockPos1 = block[i].posibilities;
 					ArrayList<Integer> blockPos2 = block[j].posibilities;
 
+					// row
 					if (rowPos1.size() != 0 && rowPos2.size() != 0) {
 						ArrayList<Integer> disj = disjunction(rowPos1, rowPos2);
 
@@ -294,7 +643,7 @@ public class Solver {
 												.get(number))) {
 											sudoku.removePosibility(f, pos,
 													disj.get(number));
-											fv.addMethod(Method.NakedTupel,
+											fv.addMethod(Method.NakedPair,
 													number);
 											posCount++;
 										}
@@ -312,6 +661,7 @@ public class Solver {
 						}
 					}
 
+					// column
 					if (colPos1.size() != 0 && colPos2.size() != 0) {
 						ArrayList<Integer> disj = disjunction(colPos1, colPos2);
 
@@ -325,7 +675,7 @@ public class Solver {
 												.get(number))) {
 											sudoku.removePosibility(pos, f,
 													disj.get(number));
-											fv.addMethod(Method.NakedTupel,
+											fv.addMethod(Method.NakedPair,
 													number);
 											posCount++;
 										}
@@ -343,6 +693,7 @@ public class Solver {
 						}
 					}
 
+					// block
 					if (blockPos1.size() != 0 && blockPos2.size() != 0) {
 						ArrayList<Integer> disj = disjunction(blockPos1,
 								blockPos2);
@@ -357,7 +708,7 @@ public class Solver {
 												.contains(disj.get(number))) {
 											sudoku.removePossibilityInBlock(f,
 													pos, disj.get(number));
-											fv.addMethod(Method.NakedTupel,
+											fv.addMethod(Method.NakedPair,
 													number);
 											posCount++;
 										}
@@ -382,52 +733,48 @@ public class Solver {
 		return false;
 	}
 
-	// http://www.sudokuwiki.org/Hidden_Candidates#HP
-	private boolean hiddenTupel() throws Exception {
+	private boolean hiddenPairs() {
+		// compare two numbers
 
 		// iterate over every figure
-		for (int f = 0; f < 9; f++) {
-			// iterate over every figure
-			HashMap<Integer, ArrayList<Integer>> rowPos = getPositionList(
-					Figure.Row, f);
-			HashMap<Integer, ArrayList<Integer>> colPos = getPositionList(
-					Figure.Column, f);
-			HashMap<Integer, ArrayList<Integer>> blockPos = getPositionList(
-					Figure.Block, f);
+		for (int figure = 0; figure < 9; figure++) {
+			// get the position lists
+			HashMap<Integer, ArrayList<Integer>> rowPositionList = getPositionList(
+					Figure.Row, figure);
+			HashMap<Integer, ArrayList<Integer>> colPositionList = getPositionList(
+					Figure.Column, figure);
+			HashMap<Integer, ArrayList<Integer>> blockPositionList = getPositionList(
+					Figure.Block, figure);
 
-			// compare 2 numbers
-			for (int i = 1; i < 10; i++) {
-				for (int j = i + 1; j < 10; j++) {
-					ArrayList<Integer> rowNumber1 = rowPos.get(i);
-					ArrayList<Integer> rowNumber2 = rowPos.get(j);
+			for (int n1 = 1; n1 < 10; n1++) {
+				for (int n2 = n1 + 1; n2 < 10; n2++) {
+					// row
+					if (rowPositionList.containsKey(n1)
+							&& rowPositionList.containsKey(n2)) {
 
-					ArrayList<Integer> colNumber1 = colPos.get(i);
-					ArrayList<Integer> colNumber2 = colPos.get(j);
-
-					ArrayList<Integer> blockNumber1 = blockPos.get(i);
-					ArrayList<Integer> blockNumber2 = blockPos.get(j);
-
-					if (rowNumber1 != null && rowNumber2 != null) {
-						ArrayList<Integer> disj = disjunction(rowNumber1,
-								rowNumber2);
-
+						ArrayList<Integer> disj = disjunction(
+								rowPositionList.get(n1),
+								rowPositionList.get(n2));
 						if (disj.size() == 2) {
 							int posCount = 0;
 
 							for (int number = 1; number < 10; number++) {
-								if (number != i && number != j) {
-									if (sudoku.getField(f, disj.get(0)).posibilities
-											.contains(number)) {
-										sudoku.removePosibility(f, disj.get(0),
-												number);
-										fv.addMethod(Method.HiddenTupel, number);
+								if (number != n1 && number != n2) {
+									Field field1 = sudoku.getField(figure,
+											disj.get(0));
+									Field field2 = sudoku.getField(figure,
+											disj.get(1));
+
+									if (field1.posibilities.contains(number)) {
+										sudoku.removePosibility(figure,
+												disj.get(0), number);
+										fv.addMethod(Method.HiddenPair, number);
 										posCount++;
 									}
-									if (sudoku.getField(f, disj.get(1)).posibilities
-											.contains(number)) {
-										sudoku.removePosibility(f, disj.get(1),
-												number);
-										fv.addMethod(Method.HiddenTupel, number);
+									if (field2.posibilities.contains(number)) {
+										sudoku.removePosibility(figure,
+												disj.get(1), number);
+										fv.addMethod(Method.HiddenPair, number);
 										posCount++;
 									}
 								}
@@ -435,73 +782,44 @@ public class Solver {
 
 							if (posCount > 0) {
 								Logger.log(LogLevel.SolvingMethods,
-										"hidden tupel row " + f + " numbers "
-												+ i + ", " + j + " removed "
-												+ posCount + " possibilities");
-								return true;
-							}
-						}
-					}
-
-					if (colNumber1 != null && colNumber2 != null) {
-						ArrayList<Integer> disj = disjunction(colNumber1,
-								colNumber2);
-
-						if (disj.size() == 2) {
-							int posCount = 0;
-
-							for (int number = 1; number < 10; number++) {
-								if (number != i && number != j) {
-									if (sudoku.getField(disj.get(0), f).posibilities
-											.contains(number)) {
-										sudoku.removePosibility(disj.get(0), f,
-												number);
-										fv.addMethod(Method.HiddenTupel, number);
-										posCount++;
-									}
-									if (sudoku.getField(disj.get(0), f).posibilities
-											.contains(number)) {
-										sudoku.removePosibility(disj.get(0), f,
-												number);
-										fv.addMethod(Method.HiddenTupel, number);
-										posCount++;
-									}
-								}
-							}
-
-							if (posCount > 0) {
-								Logger.log(LogLevel.SolvingMethods,
-										"hidden tupel column " + f
-												+ " numbers " + i + ", " + j
+										"hidden pair row " + figure
+												+ " positions " + disj.get(0)
+												+ ", " + disj.get(1)
 												+ " removed " + posCount
 												+ " possibilities");
 								return true;
 							}
 						}
+
 					}
 
-					if (blockNumber1 != null && blockNumber2 != null) {
-						ArrayList<Integer> disj = disjunction(blockNumber1,
-								blockNumber2);
+					// column
+					if (colPositionList.containsKey(n1)
+							&& colPositionList.containsKey(n2)) {
 
+						ArrayList<Integer> disj = disjunction(
+								colPositionList.get(n1),
+								colPositionList.get(n2));
 						if (disj.size() == 2) {
 							int posCount = 0;
 
 							for (int number = 1; number < 10; number++) {
-								if (number != i && number != j) {
+								if (number != n1 && number != n2) {
+									Field field1 = sudoku.getField(disj.get(0),
+											figure);
+									Field field2 = sudoku.getField(disj.get(1),
+											figure);
 
-									if (sudoku.get(Figure.Block, f)[disj.get(0)].posibilities
-											.contains(number)) {
-										sudoku.removePossibilityInBlock(f,
-												disj.get(0), number);
-										fv.addMethod(Method.HiddenTupel, number);
+									if (field1.posibilities.contains(number)) {
+										sudoku.removePosibility(disj.get(0),
+												figure, number);
+										fv.addMethod(Method.HiddenPair, number);
 										posCount++;
 									}
-									if (sudoku.get(Figure.Block, f)[disj.get(1)].posibilities
-											.contains(number)) {
-										sudoku.removePossibilityInBlock(f,
-												disj.get(1), number);
-										fv.addMethod(Method.HiddenTupel, number);
+									if (field2.posibilities.contains(number)) {
+										sudoku.removePosibility(disj.get(1),
+												figure, number);
+										fv.addMethod(Method.HiddenPair, number);
 										posCount++;
 									}
 								}
@@ -509,12 +827,60 @@ public class Solver {
 
 							if (posCount > 0) {
 								Logger.log(LogLevel.SolvingMethods,
-										"hidden tupel block " + f + " numbers "
-												+ i + ", " + j + " removed "
-												+ posCount + " possibilities");
+										"hidden pair column " + figure
+												+ " positions " + disj.get(0)
+												+ ", " + disj.get(1)
+												+ " removed " + posCount
+												+ " possibilities");
 								return true;
 							}
 						}
+
+					}
+
+					// block
+					if (blockPositionList.containsKey(n1)
+							&& blockPositionList.containsKey(n2)) {
+
+						ArrayList<Integer> disj = disjunction(
+								blockPositionList.get(n1),
+								blockPositionList.get(n2));
+						if (disj.size() == 2) {
+							int posCount = 0;
+
+							for (int number = 1; number < 10; number++) {
+								if (number != n1 && number != n2) {
+									Field[] block = sudoku.get(Figure.Block,
+											figure);
+									Field field1 = block[disj.get(0)];
+									Field field2 = block[disj.get(1)];
+
+									if (field1.posibilities.contains(number)) {
+										sudoku.removePossibilityInBlock(figure,
+												disj.get(0), number);
+										fv.addMethod(Method.HiddenPair, number);
+										posCount++;
+									}
+									if (field2.posibilities.contains(number)) {
+										sudoku.removePossibilityInBlock(figure,
+												disj.get(1), number);
+										fv.addMethod(Method.HiddenPair, number);
+										posCount++;
+									}
+								}
+							}
+
+							if (posCount > 0) {
+								Logger.log(LogLevel.SolvingMethods,
+										"hidden pair block " + figure
+												+ " positions " + disj.get(0)
+												+ ", " + disj.get(1)
+												+ " removed " + posCount
+												+ " possibilities");
+								return true;
+							}
+						}
+
 					}
 				}
 			}
@@ -523,9 +889,7 @@ public class Solver {
 		return false;
 	}
 
-	// http://www.sudokuwiki.org/Naked_Candidates#NP
-	private boolean nakedTripel() throws Exception {
-
+	private boolean nakedTriples() {
 		// iterate over every figure
 		for (int f = 0; f < 9; f++) {
 			Field[] row = sudoku.get(Figure.Row, f);
@@ -548,6 +912,7 @@ public class Solver {
 						ArrayList<Integer> blockPos2 = block[j].posibilities;
 						ArrayList<Integer> blockPos3 = block[k].posibilities;
 
+						// row
 						if (rowPos1.size() != 0 && rowPos2.size() != 0
 								&& rowPos3.size() != 0) {
 							ArrayList<Integer> disj = disjunction(rowPos1,
@@ -564,7 +929,7 @@ public class Solver {
 												sudoku.removePosibility(f, pos,
 														disj.get(number));
 												fv.addMethod(
-														Method.NakedTripel,
+														Method.NakedTriple,
 														number);
 												posCount++;
 											}
@@ -574,7 +939,7 @@ public class Solver {
 
 								if (posCount > 0) {
 									Logger.log(LogLevel.SolvingMethods,
-											"naked tripel row " + f
+											"naked triple row " + f
 													+ " positions " + i + ", "
 													+ j + ", " + k
 													+ " removed " + posCount
@@ -584,6 +949,7 @@ public class Solver {
 							}
 						}
 
+						// column
 						if (colPos1.size() != 0 && colPos2.size() != 0
 								&& colPos3.size() != 0) {
 							ArrayList<Integer> disj = disjunction(colPos1,
@@ -600,7 +966,7 @@ public class Solver {
 												sudoku.removePosibility(pos, f,
 														disj.get(number));
 												fv.addMethod(
-														Method.NakedTripel,
+														Method.NakedTriple,
 														number);
 												posCount++;
 											}
@@ -610,7 +976,7 @@ public class Solver {
 
 								if (posCount > 0) {
 									Logger.log(LogLevel.SolvingMethods,
-											"naked tripel column " + f
+											"naked triple col " + f
 													+ " positions " + i + ", "
 													+ j + ", " + k
 													+ " removed " + posCount
@@ -620,6 +986,7 @@ public class Solver {
 							}
 						}
 
+						// block
 						if (blockPos1.size() != 0 && blockPos2.size() != 0
 								&& blockPos3.size() != 0) {
 							ArrayList<Integer> disj = disjunction(blockPos1,
@@ -637,7 +1004,7 @@ public class Solver {
 														f, pos,
 														disj.get(number));
 												fv.addMethod(
-														Method.NakedTripel,
+														Method.NakedTriple,
 														number);
 												posCount++;
 											}
@@ -647,7 +1014,7 @@ public class Solver {
 
 								if (posCount > 0) {
 									Logger.log(LogLevel.SolvingMethods,
-											"naked tripel block " + f
+											"naked triple block " + f
 													+ " positions " + i + ", "
 													+ j + ", " + k
 													+ " removed " + posCount
@@ -664,145 +1031,220 @@ public class Solver {
 		return false;
 	}
 
-	// http://www.sudokuwiki.org/Hidden_Candidates#HP
-	private boolean hiddenTripel() throws Exception {
+	private boolean hiddenTriples() {
+		// compare three numbers
 
 		// iterate over every figure
-		for (int f = 0; f < 9; f++) {
-			HashMap<Integer, ArrayList<Integer>> rowPos = getPositionList(
-					Figure.Row, f);
-			HashMap<Integer, ArrayList<Integer>> colPos = getPositionList(
-					Figure.Column, f);
-			HashMap<Integer, ArrayList<Integer>> blockPos = getPositionList(
-					Figure.Block, f);
+		for (int figure = 0; figure < 9; figure++) {
+			// get the position lists
+			HashMap<Integer, ArrayList<Integer>> rowPositionList = getPositionList(
+					Figure.Row, figure);
+			HashMap<Integer, ArrayList<Integer>> colPositionList = getPositionList(
+					Figure.Column, figure);
+			HashMap<Integer, ArrayList<Integer>> blockPositionList = getPositionList(
+					Figure.Block, figure);
 
-			// compare 3 numbers
-			for (int i = 1; i < 10; i++) {
-				for (int j = i + 1; j < 10; j++) {
-					for (int k = j + 1; k < 10; k++) {
-						ArrayList<Integer> rowNumber1 = rowPos.get(i);
-						ArrayList<Integer> rowNumber2 = rowPos.get(j);
-						ArrayList<Integer> rowNumber3 = rowPos.get(k);
+			for (int n1 = 1; n1 < 10; n1++) {
+				for (int n2 = n1 + 1; n2 < 10; n2++) {
+					for (int n3 = n2 + 1; n3 < 10; n3++) {
+						// row
+						if (rowPositionList.containsKey(n1)
+								&& rowPositionList.containsKey(n2)
+								&& rowPositionList.containsKey(n3)) {
 
-						ArrayList<Integer> colNumber1 = colPos.get(i);
-						ArrayList<Integer> colNumber2 = colPos.get(j);
-						ArrayList<Integer> colNumber3 = colPos.get(k);
-
-						ArrayList<Integer> blockNumber1 = blockPos.get(i);
-						ArrayList<Integer> blockNumber2 = blockPos.get(j);
-						ArrayList<Integer> blockNumber3 = blockPos.get(k);
-
-						if (rowNumber1 != null && rowNumber2 != null
-								&& rowNumber3 != null) {
-							ArrayList<Integer> disj = disjunction(rowNumber1,
-									disjunction(rowNumber2, rowNumber3));
-
+							ArrayList<Integer> disj = disjunction(
+									rowPositionList.get(n1),
+									disjunction(rowPositionList.get(n2),
+											rowPositionList.get(n3)));
 							if (disj.size() == 3) {
 								int posCount = 0;
 
+								// System.out.println("figure " + figure);
+								// System.out.println("n1 " + n1);
+								// System.out.println("n2 " + n2);
+								// System.out.println("n3 " + n3);
+								// System.out.println(disj);
+
 								for (int number = 1; number < 10; number++) {
-									if (number != i && number != j
-											&& number != k) {
-										for (int pos = 0; pos < 3; pos++) {
-											if (sudoku.getField(f,
-													disj.get(pos)).posibilities
-													.contains(number)) {
-												sudoku.removePosibility(f,
-														disj.get(pos), number);
-												fv.addMethod(
-														Method.HiddenTripel,
-														number);
-												posCount++;
-											}
+									if (number != n1 && number != n2
+											&& number != n3) {
+										Field field1 = sudoku.getField(figure,
+												disj.get(0));
+										Field field2 = sudoku.getField(figure,
+												disj.get(1));
+										Field field3 = sudoku.getField(figure,
+												disj.get(2));
+
+										if (field1.posibilities
+												.contains(number)) {
+											sudoku.removePosibility(figure,
+													disj.get(0), number);
+											fv.addMethod(Method.HiddenTriple,
+													number);
+											posCount++;
+										}
+										if (field2.posibilities
+												.contains(number)) {
+											sudoku.removePosibility(figure,
+													disj.get(1), number);
+											fv.addMethod(Method.HiddenTriple,
+													number);
+											posCount++;
+										}
+										if (field3.posibilities
+												.contains(number)) {
+											sudoku.removePosibility(figure,
+													disj.get(2), number);
+											fv.addMethod(Method.HiddenTriple,
+													number);
+											posCount++;
 										}
 									}
 								}
+
 								if (posCount > 0) {
-									Logger.log(LogLevel.SolvingMethods,
-											"hidden tripel row " + f
-													+ " numbers " + i + ", "
-													+ j + ", " + k
-													+ " removed " + posCount
+									Logger.log(
+											LogLevel.SolvingMethods,
+											"hidden triple row " + figure
+													+ " positions "
+													+ disj.get(0) + ", "
+													+ disj.get(1) + ", "
+													+ disj.get(2) + " removed "
+													+ posCount
 													+ " possibilities");
 									return true;
 								}
 							}
+
 						}
 
-						if (colNumber1 != null && colNumber2 != null
-								&& colNumber3 != null) {
-							ArrayList<Integer> disj = disjunction(colNumber1,
-									disjunction(colNumber2, colNumber3));
+						// column
+						if (colPositionList.containsKey(n1)
+								&& colPositionList.containsKey(n2)
+								&& colPositionList.containsKey(n3)) {
 
+							ArrayList<Integer> disj = disjunction(
+									colPositionList.get(n1),
+									disjunction(colPositionList.get(n2),
+											colPositionList.get(n3)));
 							if (disj.size() == 3) {
 								int posCount = 0;
 
 								for (int number = 1; number < 10; number++) {
-									if (number != i && number != j
-											&& number != k) {
-										for (int pos = 0; pos < 3; pos++) {
-											if (sudoku.getField(disj.get(pos),
-													f).posibilities
-													.contains(number)) {
-												sudoku.removePosibility(
-														disj.get(pos), f,
-														number);
-												fv.addMethod(
-														Method.HiddenTripel,
-														number);
-												posCount++;
-											}
+									if (number != n1 && number != n2
+											&& number != n3) {
+										Field field1 = sudoku.getField(
+												disj.get(0), figure);
+										Field field2 = sudoku.getField(
+												disj.get(1), figure);
+										Field field3 = sudoku.getField(
+												disj.get(2), figure);
+
+										if (field1.posibilities
+												.contains(number)) {
+											sudoku.removePosibility(
+													disj.get(0), figure, number);
+											fv.addMethod(Method.HiddenTriple,
+													number);
+											posCount++;
+										}
+										if (field2.posibilities
+												.contains(number)) {
+											sudoku.removePosibility(
+													disj.get(1), figure, number);
+											fv.addMethod(Method.HiddenTriple,
+													number);
+											posCount++;
+										}
+										if (field3.posibilities
+												.contains(number)) {
+											sudoku.removePosibility(
+													disj.get(2), figure, number);
+											fv.addMethod(Method.HiddenTriple,
+													number);
+											posCount++;
 										}
 									}
 								}
+
 								if (posCount > 0) {
-									Logger.log(LogLevel.SolvingMethods,
-											"hidden tripel column " + f
-													+ " numbers " + i + ", "
-													+ j + ", " + k
-													+ " removed " + posCount
+									Logger.log(
+											LogLevel.SolvingMethods,
+											"hidden triple column " + figure
+													+ " positions "
+													+ disj.get(0) + ", "
+													+ disj.get(1) + ", "
+													+ disj.get(2) + " removed "
+													+ posCount
 													+ " possibilities");
 									return true;
 								}
 							}
+
 						}
 
-						if (blockNumber1 != null && blockNumber2 != null
-								&& blockNumber3 != null) {
-							ArrayList<Integer> disj = disjunction(blockNumber1,
-									disjunction(blockNumber2, blockNumber3));
+						// block
+						if (blockPositionList.containsKey(n1)
+								&& blockPositionList.containsKey(n2)
+								&& blockPositionList.containsKey(n3)) {
 
+							ArrayList<Integer> disj = disjunction(
+									blockPositionList.get(n1),
+									disjunction(blockPositionList.get(n2),
+											blockPositionList.get(n3)));
 							if (disj.size() == 3) {
 								int posCount = 0;
 
 								for (int number = 1; number < 10; number++) {
-									if (number != i && number != j
-											&& number != k) {
-										for (int pos = 0; pos < 3; pos++) {
-											if (sudoku.get(Figure.Block, f)[disj
-													.get(pos)].posibilities
-													.contains(number)) {
-												sudoku.removePossibilityInBlock(
-														f, disj.get(pos),
-														number);
-												fv.addMethod(
-														Method.HiddenTripel,
-														number);
-												posCount++;
-											}
+									if (number != n1 && number != n2
+											&& number != n3) {
+										Field[] block = sudoku.get(
+												Figure.Block, figure);
+										Field field1 = block[disj.get(0)];
+										Field field2 = block[disj.get(1)];
+										Field field3 = block[disj.get(2)];
+
+										if (field1.posibilities
+												.contains(number)) {
+											sudoku.removePossibilityInBlock(
+													figure, disj.get(0), number);
+											fv.addMethod(Method.HiddenTriple,
+													number);
+											posCount++;
+										}
+										if (field2.posibilities
+												.contains(number)) {
+											sudoku.removePossibilityInBlock(
+													figure, disj.get(1), number);
+											fv.addMethod(Method.HiddenTriple,
+													number);
+											posCount++;
+										}
+										if (field3.posibilities
+												.contains(number)) {
+											sudoku.removePossibilityInBlock(
+													figure, disj.get(2), number);
+											fv.addMethod(Method.HiddenTriple,
+													number);
+											posCount++;
 										}
 									}
 								}
+
 								if (posCount > 0) {
-									Logger.log(LogLevel.SolvingMethods,
-											"hidden tripel block " + f
-													+ " numbers " + i + ", "
-													+ j + ", " + k
-													+ " removed " + posCount
+									Logger.log(
+											LogLevel.SolvingMethods,
+											"hidden pair block " + figure
+													+ " positions "
+													+ disj.get(0) + ", "
+													+ disj.get(1) + ", "
+													+ disj.get(2) + " removed "
+													+ posCount
 													+ " possibilities");
 									return true;
 								}
 							}
+
 						}
 					}
 				}
@@ -812,556 +1254,95 @@ public class Solver {
 		return false;
 	}
 
-	// http://sudoku.soeinding.de/strategie/strategie02f.php
-	private boolean crossing() throws Exception {
-
-		// iterate over every row
-		for (int r = 0; r < 9; r++) {
-			Field[] row = sudoku.get(Figure.Row, r);
-			// list of possibilities for every rowblock
-			ArrayList<ArrayList<Integer>> blockLists = new ArrayList<ArrayList<Integer>>();
-
-			// iterate over every block in the row
-			for (int rowBlock = 0; rowBlock < 3; rowBlock++) {
-				// get the possibilities of every position in the rowblock
-				ArrayList<Integer> p1 = row[rowBlock * 3].posibilities;
-				ArrayList<Integer> p2 = row[rowBlock * 3 + 1].posibilities;
-				ArrayList<Integer> p3 = row[rowBlock * 3 + 2].posibilities;
-				// ArrayList<Integer> blockList = conjunction(p1,
-				// conjunction(p2, p3));
-				ArrayList<Integer> blockList = disjunction(p1,
-						disjunction(p2, p3));
-				// add a list of this blocks possibilities
-				blockLists.add(blockList);
-			}
-
-			// iterate over every number
-			for (int number = 1; number < 10; number++) {
-				ArrayList<Integer> dis01 = disjunction(blockLists.get(0),
-						blockLists.get(1));
-				ArrayList<Integer> dis02 = disjunction(blockLists.get(0),
-						blockLists.get(2));
-				ArrayList<Integer> dis12 = disjunction(blockLists.get(1),
-						blockLists.get(2));
-
-				int blockNumber = 6;
-				if (r < 6)
-					blockNumber = 3;
-				if (r < 3)
-					blockNumber = 0;
-
-				if (blockLists.get(0).contains(number)
-						&& !dis12.contains(number)) {
-					int posCount = 0;
-					Field[] block = sudoku.get(Figure.Block, blockNumber);
-
-					for (int pos = 0; pos < 9; pos++) {
-						int rowNumber = r % 3;
-						if (pos != 3 * rowNumber && pos != 3 * rowNumber + 1
-								&& pos != 3 * rowNumber + 2) {
-							if (block[pos].posibilities.contains(number)) {
-								sudoku.removePossibilityInBlock(blockNumber,
-										pos, number);
-								fv.addMethod(Method.Crossing, number);
-								posCount++;
-							}
-						}
-					}
-					if (posCount > 0) {
-						Logger.log(LogLevel.SolvingMethods, "crossing row " + r
-								+ " block " + blockNumber + " number " + number
-								+ " removed " + posCount + " possibilities");
-						return true;
-					}
-				}
-				if (blockLists.get(1).contains(number)
-						&& !dis02.contains(number)) {
-					blockNumber++;
-					int posCount = 0;
-					Field[] block = sudoku.get(Figure.Block, blockNumber);
-
-					for (int pos = 0; pos < 9; pos++) {
-						int rowNumber = r % 3;
-						if (pos != 3 * rowNumber && pos != 3 * rowNumber + 1
-								&& pos != 3 * rowNumber + 2) {
-							if (block[pos].posibilities.contains(number)) {
-								sudoku.removePossibilityInBlock(blockNumber,
-										pos, number);
-								fv.addMethod(Method.Crossing, number);
-								posCount++;
-							}
-						}
-					}
-					if (posCount > 0) {
-						Logger.log(LogLevel.SolvingMethods, "crossing row " + r
-								+ " block " + blockNumber + " number " + number
-								+ " removed " + posCount + " possibilities");
-						return true;
-					}
-				}
-				if (blockLists.get(2).contains(number)
-						&& !dis01.contains(number)) {
-					blockNumber += 2;
-					int posCount = 0;
-					Field[] block = sudoku.get(Figure.Block, blockNumber);
-
-					for (int pos = 0; pos < 9; pos++) {
-						int rowNumber = r % 3;
-						if (pos != 3 * rowNumber && pos != 3 * rowNumber + 1
-								&& pos != 3 * rowNumber + 2) {
-							if (block[pos].posibilities.contains(number)) {
-								sudoku.removePossibilityInBlock(blockNumber,
-										pos, number);
-								fv.addMethod(Method.Crossing, number);
-								posCount++;
-							}
-						}
-					}
-					if (posCount > 0) {
-						Logger.log(LogLevel.SolvingMethods, "crossing row " + r
-								+ " block " + blockNumber + " number " + number
-								+ " removed " + posCount + " possibilities");
-						return true;
-					}
-				}
-			}
-		}
-
-		// iterate over every column
-		for (int c = 0; c < 9; c++) {
-			Field[] col = sudoku.get(Figure.Column, c);
-			// list of possibilities for every colblock
-			ArrayList<ArrayList<Integer>> blockLists = new ArrayList<ArrayList<Integer>>();
-
-			// iterate over every block in the column
-			for (int colBlock = 0; colBlock < 3; colBlock++) {
-				// get the possibilities of every position in the rowblock
-				ArrayList<Integer> p1 = col[colBlock * 3].posibilities;
-				ArrayList<Integer> p2 = col[colBlock * 3 + 1].posibilities;
-				ArrayList<Integer> p3 = col[colBlock * 3 + 2].posibilities;
-				// ArrayList<Integer> blockList = conjunction(p1,
-				// conjunction(p2, p3));
-				ArrayList<Integer> blockList = disjunction(p1,
-						disjunction(p2, p3));
-				// add a list of this blocks possibilities
-				blockLists.add(blockList);
-			}
-
-			// iterate over every number
-			for (int number = 1; number < 10; number++) {
-				ArrayList<Integer> dis01 = disjunction(blockLists.get(0),
-						blockLists.get(1));
-				ArrayList<Integer> dis02 = disjunction(blockLists.get(0),
-						blockLists.get(2));
-				ArrayList<Integer> dis12 = disjunction(blockLists.get(1),
-						blockLists.get(2));
-
-				int blockNumber = 2;
-				if (c < 6)
-					blockNumber = 1;
-				if (c < 3)
-					blockNumber = 0;
-
-				if (blockLists.get(0).contains(number)
-						&& !dis12.contains(number)) {
-					int posCount = 0;
-					Field[] block = sudoku.get(Figure.Block, blockNumber);
-
-					for (int pos = 0; pos < 9; pos++) {
-						int colNumber = c % 3;
-						if (pos != colNumber && pos != colNumber + 3
-								&& pos != colNumber + 6) {
-							if (block[pos].posibilities.contains(number)) {
-								sudoku.removePossibilityInBlock(blockNumber,
-										pos, number);
-								fv.addMethod(Method.Crossing, number);
-								posCount++;
-							}
-						}
-					}
-					if (posCount > 0) {
-						Logger.log(LogLevel.SolvingMethods, "crossing column "
-								+ c + " block " + blockNumber + " number "
-								+ number + " removed " + posCount
-								+ " possibilities");
-						return true;
-					}
-				}
-				if (blockLists.get(1).contains(number)
-						&& !dis02.contains(number)) {
-					blockNumber += 3;
-					int posCount = 0;
-					Field[] block = sudoku.get(Figure.Block, blockNumber);
-
-					for (int pos = 0; pos < 9; pos++) {
-						int colNumber = c % 3;
-						if (pos != colNumber && pos != colNumber + 3
-								&& pos != colNumber + 6) {
-							if (block[pos].posibilities.contains(number)) {
-								sudoku.removePossibilityInBlock(blockNumber,
-										pos, number);
-								fv.addMethod(Method.Crossing, number);
-								posCount++;
-							}
-						}
-					}
-					if (posCount > 0) {
-						Logger.log(LogLevel.SolvingMethods, "crossing column "
-								+ c + " block " + blockNumber + " number "
-								+ number + " removed " + posCount
-								+ " possibilities");
-						return true;
-					}
-				}
-				if (blockLists.get(2).contains(number)
-						&& !dis01.contains(number)) {
-					blockNumber += 6;
-					int posCount = 0;
-					Field[] block = sudoku.get(Figure.Block, blockNumber);
-
-					for (int pos = 0; pos < 9; pos++) {
-						int colNumber = c % 3;
-						if (pos != colNumber && pos != colNumber + 3
-								&& pos != colNumber + 6) {
-							if (block[pos].posibilities.contains(number)) {
-								sudoku.removePossibilityInBlock(blockNumber,
-										pos, number);
-								fv.addMethod(Method.Crossing, number);
-								posCount++;
-							}
-						}
-					}
-					if (posCount > 0) {
-						Logger.log(LogLevel.SolvingMethods, "crossing column "
-								+ c + " block " + blockNumber + " number "
-								+ number + " removed " + posCount
-								+ " possibilities");
-						return true;
-					}
-				}
-			}
-
-		}
-
-		// iteratve over every block
-		for (int b = 0; b < 9; b++) {
-			Field[] block = sudoku.get(Figure.Block, b);
-			// list of possibilities for every colblock
-			ArrayList<ArrayList<Integer>> blockLists = new ArrayList<ArrayList<Integer>>();
-
-			// check for row crossings
-			// iterate over every row in the block
-
-			for (int blockRow = 0; blockRow < 3; blockRow++) {
-				// get the possibilities of every position in the blockrow
-				ArrayList<Integer> p1 = block[blockRow * 3].posibilities;
-				ArrayList<Integer> p2 = block[blockRow * 3 + 1].posibilities;
-				ArrayList<Integer> p3 = block[blockRow * 3 + 2].posibilities;
-
-				ArrayList<Integer> blockList = disjunction(p1,
-						disjunction(p2, p3));
-				// add a list of this blocks possibilities
-				blockLists.add(blockList);
-			}
-
-			// iterate over every number
-			for (int number = 1; number < 10; number++) {
-				ArrayList<Integer> dis01 = disjunction(blockLists.get(0),
-						blockLists.get(1));
-				ArrayList<Integer> dis02 = disjunction(blockLists.get(0),
-						blockLists.get(2));
-				ArrayList<Integer> dis12 = disjunction(blockLists.get(1),
-						blockLists.get(2));
-
-				int rowNumber = 6;
-				if (b < 6)
-					rowNumber = 3;
-				if (b < 3)
-					rowNumber = 0;
-
-				if (blockLists.get(0).contains(number)
-						&& !dis12.contains(number)) {
-					int posCount = 0;
-					Field[] row = sudoku.get(Figure.Row, rowNumber);
-
-					for (int pos = 0; pos < 9; pos++) {
-						int blockNumber = b % 3;
-						if (pos != 3 * blockNumber
-								&& pos != 3 * blockNumber + 1
-								&& pos != 3 * blockNumber + 2) {
-							if (row[pos].posibilities.contains(number)) {
-								sudoku.removePosibility(rowNumber, pos, number);
-								fv.addMethod(Method.Crossing, number);
-								posCount++;
-							}
-						}
-					}
-					if (posCount > 0) {
-						Logger.log(LogLevel.SolvingMethods, "crossing block "
-								+ b + " row " + rowNumber + " number " + number
-								+ " removed " + posCount + " possibilities");
-						return true;
-					}
-				}
-				if (blockLists.get(1).contains(number)
-						&& !dis02.contains(number)) {
-					rowNumber++;
-					int posCount = 0;
-					Field[] row = sudoku.get(Figure.Row, rowNumber);
-
-					for (int pos = 0; pos < 9; pos++) {
-						int blockNumber = b % 3;
-						if (pos != 3 * blockNumber
-								&& pos != 3 * blockNumber + 1
-								&& pos != 3 * blockNumber + 2) {
-							if (row[pos].posibilities.contains(number)) {
-								sudoku.removePosibility(rowNumber, pos, number);
-								fv.addMethod(Method.Crossing, number);
-								posCount++;
-							}
-						}
-					}
-					if (posCount > 0) {
-						Logger.log(LogLevel.SolvingMethods, "crossing block "
-								+ b + " row " + rowNumber + " number " + number
-								+ " removed " + posCount + " possibilities");
-						return true;
-					}
-				}
-				if (blockLists.get(2).contains(number)
-						&& !dis01.contains(number)) {
-					rowNumber += 2;
-					int posCount = 0;
-					Field[] row = sudoku.get(Figure.Row, rowNumber);
-
-					for (int pos = 0; pos < 9; pos++) {
-						int blockNumber = b % 3;
-						if (pos != 3 * blockNumber
-								&& pos != 3 * blockNumber + 1
-								&& pos != 3 * blockNumber + 2) {
-							if (row[pos].posibilities.contains(number)) {
-								sudoku.removePosibility(rowNumber, pos, number);
-								fv.addMethod(Method.Crossing, number);
-								posCount++;
-							}
-						}
-					}
-					if (posCount > 0) {
-						Logger.log(LogLevel.SolvingMethods, "crossing block "
-								+ b + " row " + rowNumber + " number " + number
-								+ " removed " + posCount + " possibilities");
-						return true;
-					}
-				}
-			}
-
-			// check for col crossings
-			// iterate over every column in the block
-			blockLists = new ArrayList<ArrayList<Integer>>();
-			for (int blockRow = 0; blockRow < 3; blockRow++) {
-				// get the possibilities of every position in the blockrow
-				ArrayList<Integer> p1 = block[blockRow].posibilities;
-				ArrayList<Integer> p2 = block[blockRow + 3].posibilities;
-				ArrayList<Integer> p3 = block[blockRow + 6].posibilities;
-
-				ArrayList<Integer> blockList = disjunction(p1,
-						disjunction(p2, p3));
-				// add a list of this blocks possibilities
-				blockLists.add(blockList);
-			}
-
-			// iterate over every number
-			for (int number = 1; number < 10; number++) {
-				ArrayList<Integer> dis01 = disjunction(blockLists.get(0),
-						blockLists.get(1));
-				ArrayList<Integer> dis02 = disjunction(blockLists.get(0),
-						blockLists.get(2));
-				ArrayList<Integer> dis12 = disjunction(blockLists.get(1),
-						blockLists.get(2));
-
-				int rowNumber = 6;
-				if (b < 6)
-					rowNumber = 3;
-				if (b < 3)
-					rowNumber = 0;
-
-				int colNumber = 3 * (b % 3);
-
-				if (blockLists.get(0).contains(number)
-						&& !dis12.contains(number)) {
-					int posCount = 0;
-					Field[] col = sudoku.get(Figure.Column, colNumber);
-
-					for (int pos = 0; pos < 9; pos++) {
-
-						if (pos != rowNumber && pos != rowNumber + 1
-								&& pos != rowNumber + 2) {
-							if (col[pos].posibilities.contains(number)) {
-								sudoku.removePosibility(pos, colNumber, number);
-								fv.addMethod(Method.Crossing, number);
-								posCount++;
-							}
-						}
-					}
-					if (posCount > 0) {
-						Logger.log(LogLevel.SolvingMethods, "crossing block "
-								+ b + " column " + colNumber + " number "
-								+ number + " removed " + posCount
-								+ " possibilities");
-						return true;
-					}
-				}
-				if (blockLists.get(1).contains(number)
-						&& !dis02.contains(number)) {
-					colNumber += 1;
-					int posCount = 0;
-					Field[] col = sudoku.get(Figure.Column, colNumber);
-
-					for (int pos = 0; pos < 9; pos++) {
-						if (pos != rowNumber && pos != rowNumber + 1
-								&& pos != rowNumber + 2) {
-							if (col[pos].posibilities.contains(number)) {
-								sudoku.removePosibility(pos, colNumber, number);
-								fv.addMethod(Method.Crossing, number);
-								posCount++;
-							}
-						}
-					}
-					if (posCount > 0) {
-						Logger.log(LogLevel.SolvingMethods, "crossing block "
-								+ b + " column " + colNumber + " number "
-								+ number + " removed " + posCount
-								+ " possibilities");
-						return true;
-					}
-				}
-				if (blockLists.get(2).contains(number)
-						&& !dis01.contains(number)) {
-					colNumber += 2;
-					int posCount = 0;
-					Field[] col = sudoku.get(Figure.Column, colNumber);
-
-					for (int pos = 0; pos < 9; pos++) {
-						if (pos != rowNumber && pos != rowNumber + 1
-								&& pos != rowNumber + 2) {
-							if (col[pos].posibilities.contains(number)) {
-								sudoku.removePosibility(pos, colNumber, number);
-								fv.addMethod(Method.Crossing, number);
-								posCount++;
-							}
-						}
-					}
-					if (posCount > 0) {
-						Logger.log(LogLevel.SolvingMethods, "crossing block "
-								+ b + " column " + colNumber + " number "
-								+ number + " removed " + posCount
-								+ " possibilities");
-						return true;
-					}
-				}
-			}
-		}
-		return false;
-	}
-
-	// http://sudoku.soeinding.de/strategie/strategie02g.php
-	public boolean grid() throws Exception {
-		// iterate over every number
+	private boolean xWing() {
 		for (int number = 1; number < 10; number++) {
-			// compare 2 rows / columns
 			for (int f1 = 0; f1 < 9; f1++) {
 				for (int f2 = f1 + 1; f2 < 9; f2++) {
-					// Rows
-					ArrayList<Integer> positions1 = getPositionList(Figure.Row,
-							f1).get(number);
-					ArrayList<Integer> positions2 = getPositionList(Figure.Row,
-							f2).get(number);
 
-					if (positions1 != null && positions2 != null
-							&& positions1.size() == 2 && positions2.size() == 2) {
-						ArrayList<Integer> disj = disjunction(positions1,
-								positions2);
+					ArrayList<Integer> rowPositionList1 = getPositionList(
+							Figure.Row, f1).get(number);
+					ArrayList<Integer> rowPositionList2 = getPositionList(
+							Figure.Row, f2).get(number);
 
-						if (disj.size() == 2) {
-							int posCount = 0;
+					ArrayList<Integer> colPositionList1 = getPositionList(
+							Figure.Column, f1).get(number);
+					ArrayList<Integer> colPositionList2 = getPositionList(
+							Figure.Column, f2).get(number);
 
-							// grid found, delete possibilities from the colums
-							// where the grid was found
-							for (int pos = 0; pos < 9; pos++) {
-								if (pos != f1 && pos != f2) {
-									if (sudoku.getField(pos, disj.get(0)).posibilities
-											.contains(number)) {
-										posCount++;
-										sudoku.removePosibility(pos,
-												disj.get(0), number);
-										fv.addMethod(Method.Grid, number);
-									}
-									if (sudoku.getField(pos, disj.get(1)).posibilities
-											.contains(number)) {
-										posCount++;
-										sudoku.removePosibility(pos,
-												disj.get(1), number);
-										fv.addMethod(Method.Grid, number);
-									}
+					// rows
+					if (rowPositionList1 != null && rowPositionList2 != null
+							&& areEqual(rowPositionList1, rowPositionList2)
+							&& rowPositionList1.size() == 2) {
+
+						int posCount = 0;
+
+						// iterate over the columns
+						for (int i = 0; i < 9; i++) {
+							// dont remove the possibilities in the crossing
+							// rows
+							if (i != f1 && i != f2) {
+								Field field1 = sudoku.getField(i,
+										rowPositionList1.get(0));
+								Field field2 = sudoku.getField(i,
+										rowPositionList1.get(1));
+								if (field1.posibilities.contains(number)) {
+									sudoku.removePosibility(i,
+											rowPositionList1.get(0), number);
+									posCount++;
+								}
+								if (field2.posibilities.contains(number)) {
+									sudoku.removePosibility(i,
+											rowPositionList1.get(1), number);
+									posCount++;
 								}
 							}
+						}
 
-							if (posCount > 0) {
-								Logger.log(LogLevel.SolvingMethods,
-										"grid at rows " + f1 + ", " + f2
-												+ " number " + number
-												+ " positions " + disj.get(0)
-												+ ", " + disj.get(1)
-												+ " removed " + posCount
-												+ " possibilities");
-								return true;
-							}
+						if (posCount > 0) {
+							Logger.log(LogLevel.SolvingMethods, "x Wing rows "
+									+ f1 + ", " + f2 + " number " + number
+									+ " removed " + posCount + " possibilities");
+							fv.addMethod(Method.xWing, number, posCount);
+							return true;
 						}
 					}
 
-					// Columns
-					positions1 = getPositionList(Figure.Column, f1).get(number);
-					positions2 = getPositionList(Figure.Column, f2).get(number);
+					// columns
+					if (colPositionList1 != null && colPositionList2 != null
+							&& areEqual(colPositionList1, colPositionList2)
+							&& colPositionList1.size() == 2) {
 
-					if (positions1 != null && positions2 != null
-							&& positions1.size() == 2 && positions2.size() == 2) {
-						ArrayList<Integer> disj = disjunction(positions1,
-								positions2);
+						int posCount = 0;
 
-						if (disj.size() == 2) {
-							int posCount = 0;
-
-							// grid found, delete possibilities from the rows
-							// where the grid was found
-							for (int pos = 0; pos < 9; pos++) {
-								if (pos != f1 && pos != f2) {
-									if (sudoku.getField(disj.get(0), pos).posibilities
-											.contains(number)) {
-										posCount++;
-										sudoku.removePosibility(disj.get(0),
-												pos, number);
-										fv.addMethod(Method.Grid, number);
-									}
-									if (sudoku.getField(disj.get(1), pos).posibilities
-											.contains(number)) {
-										posCount++;
-										sudoku.removePosibility(disj.get(1),
-												pos, number);
-										fv.addMethod(Method.Grid, number);
-									}
+						// iterate over the rows
+						for (int i = 0; i < 9; i++) {
+							// dont remove the possibilities in the crossing
+							// columns
+							if (i != f1 && i != f2) {
+								Field field1 = sudoku.getField(
+										colPositionList1.get(0), i);
+								Field field2 = sudoku.getField(
+										colPositionList1.get(1), i);
+								if (field1.posibilities.contains(number)) {
+									sudoku.removePosibility(
+											colPositionList1.get(0), i, number);
+									posCount++;
+								}
+								if (field2.posibilities.contains(number)) {
+									sudoku.removePosibility(
+											colPositionList1.get(1), i, number);
+									posCount++;
 								}
 							}
+						}
 
-							if (posCount > 0) {
-								Logger.log(LogLevel.SolvingMethods,
-										"grid at columns " + f1 + ", " + f2
-												+ " number " + number
-												+ " positions " + disj.get(0)
-												+ ", " + disj.get(1)
-												+ " removed " + posCount
-												+ " possibilities");
-								return true;
-							}
+						if (posCount > 0) {
+							Logger.log(LogLevel.SolvingMethods,
+									"x Wing columns " + f1 + ", " + f2
+											+ " number " + number + " removed "
+											+ posCount + " possibilities");
+							fv.addMethod(Method.xWing, number, posCount);
+							return true;
 						}
 					}
 				}
@@ -1371,286 +1352,149 @@ public class Solver {
 		return false;
 	}
 
-	// http://hodoku.sourceforge.net/en/tech_wings.php
-	public boolean xyWing() throws Exception {
-		// iterate over all fields of the sudoku
-		for (int row = 0; row < 9; row++) {
-			for (int col = 0; col < 9; col++) {
+	private boolean swordFish() {
 
-				// find a field with 2 possibilities
-				Field xy = sudoku.getField(row, col);
-				if (xy.number == 0 && xy.posibilities.size() == 2) {
-
-					// get a list of all buddie cells with 2 possibilities
-					ArrayList<Vector<Integer>> buddyList = getBuddies(row, col);
-
-					for (int i = 0; i < buddyList.size(); i++) {
-						if (sudoku.getField(buddyList.get(i).get(0), buddyList
-								.get(i).get(1)).posibilities.size() != 2)
-							buddyList.remove(i);
-					}
-
-					// pairwise compare all buddy cells for xy wing
-					for (int buddy1 = 0; buddy1 < buddyList.size(); buddy1++) {
-						for (int buddy2 = buddy1 + 1; buddy2 < buddyList.size(); buddy2++) {
-
-							Field yz = sudoku.getField(buddyList.get(buddy1)
-									.get(0), buddyList.get(buddy1).get(1));
-
-							if (yz.number == 0 && yz.posibilities.size() == 2) {
-								// check if one possibility in xy and yz is the
-								// same
-								if (disjunction(xy.posibilities,
-										yz.posibilities).size() == 3) {
-									// determine what has to be x y and z
-									int x = 0;
-									int y = 0;
-									int z = 0;
-
-									if (yz.posibilities
-											.contains(xy.posibilities.get(0))) {
-										x = xy.posibilities.get(1);
-										y = xy.posibilities.get(0);
-										z = yz.posibilities.get(0) != y ? yz.posibilities
-												.get(0) : yz.posibilities
-												.get(1);
-									}
-
-									if (yz.posibilities
-											.contains(xy.posibilities.get(1))) {
-										x = xy.posibilities.get(0);
-										y = xy.posibilities.get(1);
-										z = yz.posibilities.get(0) != y ? yz.posibilities
-												.get(0) : yz.posibilities
-												.get(1);
-									}
-
-									// get the second buddy
-									Field xz = sudoku.getField(
-											buddyList.get(buddy2).get(0),
-											buddyList.get(buddy2).get(1));
-
-									// if the second buddy has x and z as only
-									// possibilities, then we found an xy wing
-									if (xz.number == 0
-											&& xz.posibilities.size() == 2) {
-										if (xz.posibilities.contains(x)
-												&& xz.posibilities.contains(z)) {
-
-											// get a list of all buddies of the
-											// buddies
-											ArrayList<Vector<Integer>> buddy1buddys = getBuddies(
-													buddyList.get(buddy1)
-															.get(0), buddyList
-															.get(buddy1).get(1));
-											ArrayList<Vector<Integer>> buddy2buddys = getBuddies(
-													buddyList.get(buddy2)
-															.get(0), buddyList
-															.get(buddy2).get(1));
-
-											// conjunct it to get the common
-											// buddies
-											ArrayList<Vector<Integer>> removeNumberFrom = conjunction(
-													buddy1buddys, buddy2buddys);
-
-											// remove themself and the xy field
-											// from the common buddy list
-											removeNumberFrom.remove(buddyList
-													.get(buddy1));
-											removeNumberFrom.remove(buddyList
-													.get(buddy2));
-											Vector<Integer> xyVec = new Vector<Integer>();
-											xyVec.add(row);
-											xyVec.add(col);
-											removeNumberFrom.remove(xyVec);
-
-											int posCount = 0;
-
-											// go through all common buddies and
-											// remove z if it is in there
-											for (int i = 0; i < removeNumberFrom
-													.size(); i++) {
-												Field f = sudoku.getField(
-														removeNumberFrom.get(i)
-																.get(0),
-														removeNumberFrom.get(i)
-																.get(1));
-												if (sudoku.getField(
-														removeNumberFrom.get(i)
-																.get(0),
-														removeNumberFrom.get(i)
-																.get(1)).posibilities
-														.contains(z)) {
-													sudoku.removePosibility(
-															removeNumberFrom
-																	.get(i)
-																	.get(0),
-															removeNumberFrom
-																	.get(i)
-																	.get(1), z);
-													fv.addMethod(Method.xyWing,
-															z);
-													posCount++;
-												}
-											}
-
-											if (posCount > 0) {
-												Logger.log(
-														LogLevel.SolvingMethods,
-														"xyWing xy [ "
-																+ row
-																+ " / "
-																+ col
-																+ " ] yz [ "
-																+ buddyList
-																		.get(buddy1)
-																		.get(0)
-																+ " / "
-																+ buddyList
-																		.get(buddy1)
-																		.get(1)
-																+ " ] xz [ "
-																+ buddyList
-																		.get(buddy2)
-																		.get(0)
-																+ " / "
-																+ buddyList
-																		.get(buddy2)
-																		.get(1)
-																+ " ]"
-																+ " removed "
-																+ posCount
-																+ " possibilities");
-												return true;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-
-		return false;
-	}
-
-	// http://www.sudokuwiki.org/Sword_Fish_Strategy
-	public boolean swordFish() throws Exception {
-		// iterate over every number
 		for (int number = 1; number < 10; number++) {
-
-			// compare 3 figures (rows or columns)
 			for (int f1 = 0; f1 < 9; f1++) {
 				for (int f2 = f1 + 1; f2 < 9; f2++) {
 					for (int f3 = f2 + 1; f3 < 9; f3++) {
-						// get the position lists for the rows
-						ArrayList<Integer> posList1 = getPositionList(
+
+						ArrayList<Integer> rowPositionList1 = getPositionList(
 								Figure.Row, f1).get(number);
-						ArrayList<Integer> posList2 = getPositionList(
+						ArrayList<Integer> rowPositionList2 = getPositionList(
 								Figure.Row, f2).get(number);
-						ArrayList<Integer> posList3 = getPositionList(
+						ArrayList<Integer> rowPositionList3 = getPositionList(
 								Figure.Row, f3).get(number);
 
-						// check for a swordfish
-						HashSet<Integer> hs = new HashSet<Integer>();
-						if(posList1 != null)
-							hs.addAll(posList1);
-						if(posList2 != null)
-							hs.addAll(posList2);
-						if(posList3 != null)
-							hs.addAll(posList3);
-						ArrayList<Integer> positions = new ArrayList<Integer>();
-						positions.addAll(hs);
-
-						if (posList1 != null && posList2 != null && posList3 != null && positions.size() == 3) {
-							int posCount = 0;
-
-							for (int i = 0; i < 9; i++) {
-								if (!positions.contains(i)) {
-									if (sudoku.getField(i, positions.get(0)).posibilities
-											.contains(i)) {
-										sudoku.removePosibility(i, positions.get(0), number);
-										posCount++;
-									}
-									if (sudoku.getField(i, positions.get(1)).posibilities
-											.contains(i)) {
-										sudoku.removePosibility(i, positions.get(1), number);
-										posCount++;
-									}
-									if (sudoku.getField(i, positions.get(2)).posibilities
-											.contains(i)) {
-										sudoku.removePosibility(i, positions.get(2), number);
-										posCount++;
-									}
-								}
-							}
-
-							if (posCount > 0) {
-								Logger.log(LogLevel.SolvingMethods,
-										"Sword fish found rows " + f1 + ", "
-												+ f2 + ", " + f3 + " number "
-												+ number + " removed "
-												+ posCount + " possibilities");
-								return true;
-							}
-						}
-						
-						// same for columns
-						posList1 = getPositionList(
+						ArrayList<Integer> colPositionList1 = getPositionList(
 								Figure.Column, f1).get(number);
-						posList2 = getPositionList(
+						ArrayList<Integer> colPositionList2 = getPositionList(
 								Figure.Column, f2).get(number);
-						posList3 = getPositionList(
+						ArrayList<Integer> colPositionList3 = getPositionList(
 								Figure.Column, f3).get(number);
-						
-						hs.clear();
-						if(posList1 != null)
-							hs.addAll(posList1);
-						if(posList2 != null)
-							hs.addAll(posList2);
-						if(posList3 != null)
-							hs.addAll(posList3);
-						
-						positions.clear();
-						positions.addAll(hs);
-						
-						if(number == 9 && f1 == 1 && f2 == 4 && f3 == 7) {
-							System.out.println("now");
-						}
-						
-						if (posList1 != null && posList2 != null && posList3 != null && positions.size() == 3) {
-							int posCount = 0;
 
-							for (int i = 0; i < 9; i++) {
-								if (!positions.contains(i)) {
-									if (sudoku.getField(positions.get(0), i).posibilities
-											.contains(i)) {
-										// TODO: wird irgendwie nicht gelöscht
-										sudoku.removePosibility(positions.get(0), i, number);
-										posCount++;
-									}
-									if (sudoku.getField(positions.get(1), i).posibilities
-											.contains(i)) {
-										sudoku.removePosibility(positions.get(1), i, number);
-										posCount++;
-									}
-									if (sudoku.getField(positions.get(2), i).posibilities
-											.contains(i)) {
-										sudoku.removePosibility(positions.get(2), i, number);
-										posCount++;
+						// rows
+						if (rowPositionList1 != null
+								&& rowPositionList2 != null
+								&& rowPositionList3 != null) {
+
+							ArrayList<Integer> rowPositionList = disjunction(
+									rowPositionList1,
+									disjunction(rowPositionList2,
+											rowPositionList3));
+
+							if (rowPositionList.size() == 3) {
+								int posCount = 0;
+
+								// iterate over the columns
+								for (int i = 0; i < 9; i++) {
+									// dont remove the possibilities in the
+									// crossing
+									// rows
+									if (i != f1 && i != f2 && i != f3) {
+										Field field1 = sudoku.getField(i,
+												rowPositionList.get(0));
+										Field field2 = sudoku.getField(i,
+												rowPositionList.get(1));
+										Field field3 = sudoku.getField(i,
+												rowPositionList.get(2));
+										if (field1.posibilities
+												.contains(number)) {
+											sudoku.removePosibility(i,
+													rowPositionList.get(0),
+													number);
+											posCount++;
+										}
+										if (field2.posibilities
+												.contains(number)) {
+											sudoku.removePosibility(i,
+													rowPositionList.get(1),
+													number);
+											posCount++;
+										}
+										if (field3.posibilities
+												.contains(number)) {
+											sudoku.removePosibility(i,
+													rowPositionList.get(2),
+													number);
+											posCount++;
+										}
 									}
 								}
-							}
 
-							if (posCount > 0) {
-								Logger.log(LogLevel.SolvingMethods,
-										"Sword fish found columns " + f1 + ", "
-												+ f2 + ", " + f3 + " number "
-												+ number + " removed "
-												+ posCount + " possibilities");
-								return true;
+								if (posCount > 0) {
+									Logger.log(LogLevel.SolvingMethods,
+											"swordfish rows " + f1 + ", " + f2
+													+ ", " + f3 + " number "
+													+ number + " removed "
+													+ posCount
+													+ " possibilities");
+									fv.addMethod(Method.swordFish, number,
+											posCount);
+									return true;
+								}
+							}
+						}
+
+						// columns
+						if (colPositionList1 != null
+								&& colPositionList2 != null
+								&& colPositionList3 != null) {
+
+							ArrayList<Integer> colPositionList = disjunction(
+									colPositionList1,
+									disjunction(colPositionList2,
+											colPositionList3));
+							if (colPositionList.size() == 3) {
+								int posCount = 0;
+
+								// iterate over the rows
+								for (int i = 0; i < 9; i++) {
+									// dont remove the possibilities in the
+									// crossing
+									// columns
+									if (i != f1 && i != f2 && i != f3) {
+										Field field1 = sudoku.getField(
+												colPositionList.get(0), i);
+										Field field2 = sudoku.getField(
+												colPositionList.get(1), i);
+										Field field3 = sudoku.getField(
+												colPositionList.get(2), i);
+										if (field1.posibilities
+												.contains(number)) {
+											sudoku.removePosibility(
+													colPositionList.get(0), i,
+													number);
+											posCount++;
+										}
+										if (field2.posibilities
+												.contains(number)) {
+											sudoku.removePosibility(
+													colPositionList.get(1), i,
+													number);
+											posCount++;
+										}
+										if (field3.posibilities
+												.contains(number)) {
+											sudoku.removePosibility(
+													colPositionList.get(2), i,
+													number);
+											posCount++;
+										}
+									}
+								}
+
+								if (posCount > 0) {
+									Logger.log(LogLevel.SolvingMethods,
+											"swordfish columns " + f1 + ", "
+													+ f2 + ", " + f3
+													+ " number " + number
+													+ " removed " + posCount
+													+ " possibilities");
+									fv.addMethod(Method.swordFish, number,
+											posCount);
+									return true;
+								}
 							}
 						}
 					}
@@ -1661,8 +1505,205 @@ public class Solver {
 		return false;
 	}
 
-	// HILFSFUNKTIONEN
+	private boolean jellyFish() {
 
+		for (int number = 1; number < 10; number++) {
+			for (int f1 = 0; f1 < 9; f1++) {
+				for (int f2 = f1 + 1; f2 < 9; f2++) {
+					for (int f3 = f2 + 1; f3 < 9; f3++) {
+						for (int f4 = f3 + 1; f4 < 9; f4++) {
+
+							ArrayList<Integer> rowPositionList1 = getPositionList(
+									Figure.Row, f1).get(number);
+							ArrayList<Integer> rowPositionList2 = getPositionList(
+									Figure.Row, f2).get(number);
+							ArrayList<Integer> rowPositionList3 = getPositionList(
+									Figure.Row, f3).get(number);
+							ArrayList<Integer> rowPositionList4 = getPositionList(
+									Figure.Row, f4).get(number);
+
+							ArrayList<Integer> colPositionList1 = getPositionList(
+									Figure.Column, f1).get(number);
+							ArrayList<Integer> colPositionList2 = getPositionList(
+									Figure.Column, f2).get(number);
+							ArrayList<Integer> colPositionList3 = getPositionList(
+									Figure.Column, f3).get(number);
+							ArrayList<Integer> colPositionList4 = getPositionList(
+									Figure.Column, f4).get(number);
+
+							// rows
+							if (rowPositionList1 != null
+									&& rowPositionList2 != null
+									&& rowPositionList3 != null
+									&& rowPositionList4 != null) {
+
+								ArrayList<Integer> rowPositionList = disjunction(
+										rowPositionList1,
+										disjunction(
+												rowPositionList2,
+												disjunction(rowPositionList3,
+														rowPositionList4)));
+
+								if (rowPositionList.size() == 4) {
+									int posCount = 0;
+
+									// iterate over the columns
+									for (int i = 0; i < 9; i++) {
+										// dont remove the possibilities in the
+										// crossing
+										// rows
+										if (i != f1 && i != f2 && i != f3
+												&& i != f4) {
+											Field field1 = sudoku.getField(i,
+													rowPositionList.get(0));
+											Field field2 = sudoku.getField(i,
+													rowPositionList.get(1));
+											Field field3 = sudoku.getField(i,
+													rowPositionList.get(2));
+											Field field4 = sudoku.getField(i,
+													rowPositionList.get(3));
+											if (field1.posibilities
+													.contains(number)) {
+												sudoku.removePosibility(i,
+														rowPositionList.get(0),
+														number);
+												posCount++;
+											}
+											if (field2.posibilities
+													.contains(number)) {
+												sudoku.removePosibility(i,
+														rowPositionList.get(1),
+														number);
+												posCount++;
+											}
+											if (field3.posibilities
+													.contains(number)) {
+												sudoku.removePosibility(i,
+														rowPositionList.get(2),
+														number);
+												posCount++;
+											}
+											if (field4.posibilities
+													.contains(number)) {
+												sudoku.removePosibility(i,
+														rowPositionList.get(3),
+														number);
+												posCount++;
+											}
+										}
+									}
+
+									if (posCount > 0) {
+										Logger.log(LogLevel.SolvingMethods,
+												"jellyfish rows " + f1 + ", "
+														+ f2 + ", " + f3 + ", "
+														+ f4 + " number "
+														+ number + " removed "
+														+ posCount
+														+ " possibilities");
+										fv.addMethod(Method.jellyFish, number,
+												posCount);
+										return true;
+									}
+								}
+							}
+
+							// columns
+							if (colPositionList1 != null
+									&& colPositionList2 != null
+									&& colPositionList3 != null
+									&& colPositionList4 != null) {
+
+								ArrayList<Integer> colPositionList = disjunction(
+										colPositionList1,
+										disjunction(
+												colPositionList2,
+												disjunction(colPositionList3,
+														colPositionList4)));
+								if (colPositionList.size() == 4) {
+									int posCount = 0;
+
+									// iterate over the rows
+									for (int i = 0; i < 9; i++) {
+										// dont remove the possibilities in the
+										// crossing
+										// columns
+										if (i != f1 && i != f2 && i != f3
+												&& i != f4) {
+											Field field1 = sudoku.getField(
+													colPositionList.get(0), i);
+											Field field2 = sudoku.getField(
+													colPositionList.get(1), i);
+											Field field3 = sudoku.getField(
+													colPositionList.get(2), i);
+											Field field4 = sudoku.getField(
+													colPositionList.get(3), i);
+											if (field1.posibilities
+													.contains(number)) {
+												sudoku.removePosibility(
+														colPositionList.get(0),
+														i, number);
+												posCount++;
+											}
+											if (field2.posibilities
+													.contains(number)) {
+												sudoku.removePosibility(
+														colPositionList.get(1),
+														i, number);
+												posCount++;
+											}
+											if (field3.posibilities
+													.contains(number)) {
+												sudoku.removePosibility(
+														colPositionList.get(2),
+														i, number);
+												posCount++;
+											}
+											if (field4.posibilities
+													.contains(number)) {
+												sudoku.removePosibility(
+														colPositionList.get(3),
+														i, number);
+												posCount++;
+											}
+										}
+									}
+
+									if (posCount > 0) {
+										Logger.log(LogLevel.SolvingMethods,
+												"swordfish columns " + f1
+														+ ", " + f2 + ", " + f3
+														+ ", " + f4
+														+ " number " + number
+														+ " removed "
+														+ posCount
+														+ " possibilities");
+										fv.addMethod(Method.jellyFish, number,
+												posCount);
+										return true;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	private boolean remotePairs() {
+		// iterate over
+		return false;
+	}
+	// HILFSFUNKTIONEN
+	private ArrayList<Tuple> getChainOfTuples() {
+		ArrayList<Tuple> chain = new ArrayList<Tuple>();
+		
+		return chain;
+	}
+	
 	private void updateConstraints() throws Exception {
 		for (int row = 0; row < 9; row++) {
 			for (int col = 0; col < 9; col++) {
@@ -1688,7 +1729,7 @@ public class Solver {
 	}
 
 	private HashMap<Integer, ArrayList<Integer>> getPositionList(Figure figure,
-			int id) throws Exception {
+			int id) {
 
 		HashMap<Integer, ArrayList<Integer>> positionList = new HashMap<Integer, ArrayList<Integer>>();
 
@@ -1734,18 +1775,26 @@ public class Solver {
 		return newList;
 	}
 
-	private ArrayList<Vector<Integer>> conjunction(
-			ArrayList<Vector<Integer>> l1, ArrayList<Vector<Integer>> l2) {
-		ArrayList<Vector<Integer>> conj = new ArrayList<Vector<Integer>>();
+	private ArrayList<Integer> conjunction(ArrayList<Integer> l1,
+			ArrayList<Integer> l2) {
+		ArrayList<Integer> conj = new ArrayList<Integer>();
 
-		if (l1 == null || l1.size() == 0 || l2 == null || l2.size() == 0)
-			return conj;
 		for (int i = 0; i < l1.size(); i++) {
 			if (l2.contains(l1.get(i)))
 				conj.add(l1.get(i));
 		}
 
 		return conj;
+	}
+
+	private ArrayList<Integer> difference(ArrayList<Integer> l1,
+			ArrayList<Integer> l2) {
+		ArrayList<Integer> difference = new ArrayList<Integer>();
+
+		difference.addAll(l1);
+		difference.removeAll(l2);
+
+		return difference;
 	}
 
 	private ArrayList<Vector<Integer>> getBuddies(int row, int column)
@@ -1804,17 +1853,9 @@ public class Solver {
 		return buddyList;
 	}
 
-	public boolean areEqual(ArrayList<Integer> l1, ArrayList<Integer> l2) {
-		if (l1.size() == l2.size()) {
-			for (int i = 0; i < l1.size(); i++) {
-				if (!l1.contains(l2.get(i)))
-					return false;
-				if (!l2.contains(l1.get(i)))
-					return false;
-			}
+	private boolean areEqual(ArrayList<Integer> l1, ArrayList<Integer> l2) {
+		if (l1.containsAll(l2) && l2.containsAll(l1))
 			return true;
-		}
-
 		return false;
 	}
 
@@ -1867,4 +1908,13 @@ public class Solver {
 		return true;
 	}
 
+	private class Tuple {
+		public int row;
+		public int column;
+		
+		public Tuple(int row, int column) {
+			this.row = row;
+			this.column = column;
+		}
+	}
 }
