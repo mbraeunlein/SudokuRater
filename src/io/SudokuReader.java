@@ -3,7 +3,7 @@ package io;
 import java.io.*;
 import java.util.*;
 
-import model.*;
+import sudoku.Sudoku2;
 
 public class SudokuReader {
 	private BufferedReader br = null;
@@ -16,14 +16,16 @@ public class SudokuReader {
 		}
 	}
 
-	public ArrayList<Sudoku> read() {
-		ArrayList<Sudoku> sudokus = new ArrayList<Sudoku>();
+	public ArrayList<Sudoku2> read() {
+		ArrayList<Sudoku2> sudokus = new ArrayList<Sudoku2>();
 
 		try {
 			if (br != null) {
 				String line = br.readLine();
 				while (line != null) {
-					sudokus.add(new Sudoku(line));
+					Sudoku2 sudoku = new Sudoku2();
+					sudoku.setSudoku(line);
+					sudokus.add(sudoku);
 					line = br.readLine();
 				}
 			}
@@ -41,8 +43,8 @@ public class SudokuReader {
 		return sudokus;
 	}
 
-	public ArrayList<Sudoku> readFromSoEinDing() {
-		ArrayList<Sudoku> sudokus = new ArrayList<Sudoku>();
+	public ArrayList<Sudoku2> readFromSoEinDing() {
+		ArrayList<Sudoku2> sudokus = new ArrayList<Sudoku2>();
 
 		try {
 			// read the file
@@ -66,7 +68,9 @@ public class SudokuReader {
 				for (int j = 0; j < 81; j++) {
 					sudokuString += file.charAt(i + j);
 				}
-				sudokus.add(new Sudoku(sudokuString));
+				Sudoku2 sudoku = new Sudoku2();
+				sudoku.setSudoku(sudokuString.replaceAll("0", "."));
+				sudokus.add(sudoku);
 				sudokuString = "";
 			}
 
